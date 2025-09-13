@@ -1,122 +1,267 @@
-# Tanzu Platform Chat: AI Chat Client for Cloud Foundry
+# CF MCP Client with CF-SSO Integration
 
-## Overview
+A Spring Boot application that provides an AI-powered chat client with Model Context Protocol (MCP) server integration, featuring Cloud Foundry Single Sign-On (CF-SSO) authentication.
 
-Tanzu Platform Chat (cf-mcp-client) is a Spring chatbot application that can be deployed to Cloud Foundry and consume platform AI services. It's built with Spring AI and works with LLMs, Vector Databases, and Model Context Protocol Agents.
+## 🚀 Features
 
-## Prerequisites
+- **🔐 CF-SSO Authentication**: Seamless integration with Cloud Foundry Single Sign-On
+- **🤖 AI Chat Interface**: Powered by Spring AI with support for multiple LLM providers
+- **🔌 MCP Server Integration**: Model Context Protocol server connectivity
+- **💾 Memory Management**: Persistent conversation history with vector storage
+- **📄 Document Processing**: PDF document analysis and processing
+- **🌐 Multilingual Support**: English and Hebrew language support
+- **📱 Responsive UI**: Modern, mobile-friendly interface
 
-- Java 21 or higher
-  - e.g. using [sdkman](https://sdkman.io/) `sdk install java 21.0.7-oracle`
-- Maven 3.8+
-  - e.g. using [sdkman](https://sdkman.io/) `sdk install maven`
-- Access to a Cloud Foundry Foundation with the GenAI tile or other LLM services
-- Developer access to your Cloud Foundry environment
+## 🏗️ Architecture
 
-## Deploying to Cloud Foundry
-
-### Preparing the Application
-
-1. Build the application package:
-
-```bash
-mvn clean package
+### Authentication Flow
+```
+User → Landing Page → CF-SSO Login → Welcome Page → Chat Interface
 ```
 
-2. Push the application to Cloud Foundry:
+### Technology Stack
+- **Backend**: Spring Boot 3.5.3, Spring Security, Spring AI
+- **Frontend**: Angular, HTML5, CSS3, JavaScript
+- **Authentication**: OAuth2/OIDC with CF-SSO via java-cfenv
+- **Database**: PostgreSQL with pgvector for embeddings
+- **Deployment**: Cloud Foundry with java-buildpack
 
+## 📋 Prerequisites
+
+- Java 21+
+- Maven 3.6+
+- Node.js 18+ (for frontend build)
+- PostgreSQL database
+- Cloud Foundry CLI
+- CF-SSO service instance
+
+## 🛠️ Local Development Setup
+
+### 1. Clone the Repository
 ```bash
-cf push
+git clone https://github.com/0pens0/cf-mcp-client.git
+cd cf-mcp-client
+git checkout feature/landing-page-sso
 ```
 
-### Binding to Large Language Models (LLM's)
-
-1. Create a service instance that provides chat LLM capabilities:
-
-```bash
-cf create-service genai [plan-name] chat-llm
+### 2. Database Setup
+Create a PostgreSQL database:
+```sql
+CREATE DATABASE mydb;
+CREATE USER myuser WITH PASSWORD 'mypassword';
+GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;
 ```
 
-2. Bind the service to your application:
+### 3. Environment Configuration
+Create `application-local.yaml`:
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
 
-```bash
-cf bind-service ai-tool-chat chat-llm
+# Optional: GitHub OAuth2 for local development
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope: read:user, user:email
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: id
 ```
 
-3. Restart your application to apply the binding:
-
+### 4. Build and Run
 ```bash
-cf restart ai-tool-chat
+# Build the application
+mvn clean package -DskipTests
+
+# Run locally
+java -jar target/cf-mcp-client-1.5.1.jar --spring.profiles.active=local
 ```
 
-Now your chatbot will use the LLM to respond to chat requests.
+## ☁️ Cloud Foundry Deployment
 
-![Binding to Models](images/cf-models.png)
+### 1. Prerequisites
+- CF-SSO service instance available in your Cloud Foundry space
+- PostgreSQL service instance (optional, can use external database)
 
-### Binding to Vector Databases
-
-1. Create a service instance that provides embedding LLM capabilities
-
+### 2. Service Binding
 ```bash
-cf create-service genai [plan-name] embeddings-llm 
+# Create CF-SSO service instance
+cf create-service p-identity cf-sso-service
+
+# Optional: Create PostgreSQL service
+cf create-service postgresql-db shared postgres-service
 ```
 
-2. Create a Postgres service instance to use as a vector database
-
+### 3. Deploy Application
 ```bash
-cf create-service postgres on-demand-postgres-db vector-db
+# Deploy to Cloud Foundry
+cf push cf-mcp-client-sso -f manifest.yml
 ```
 
-3. Bind the services to your application
-
+### 4. Bind Services
 ```bash
-cf bind-service ai-tool-chat embeddings-llm 
-cf bind-service ai-tool-chat vector-db
+# Bind CF-SSO service
+cf bind-service cf-mcp-client-sso cf-sso-service
+
+# Optional: Bind PostgreSQL service
+cf bind-service cf-mcp-client-sso postgres-service
+
+# Restart application to pick up service bindings
+cf restart cf-mcp-client-sso
 ```
 
-4. Restart your application to apply the binding:
+## 🔧 Configuration
 
-```bash
-cf restart ai-tool-chat
+### Automatic CF-SSO Configuration
+The application uses `java-cfenv-boot-pivotal-sso` for automatic OAuth2 configuration:
+
+```xml
+<dependency>
+    <groupId>io.pivotal.cfenv</groupId>
+    <artifactId>java-cfenv-boot-pivotal-sso</artifactId>
+    <version>3.5.0</version>
+</dependency>
 ```
 
-5. Click on the document tool on the right-side of the screen, and upload a .PDF File
-![Upload File](images/uploads.png)
+This automatically configures:
+- OAuth2 client registration with ID `sso`
+- Authorization, token, and user info URIs
+- Client ID and secret from service binding
+- Proper scopes and redirect URIs
 
-Now your chatbot will respond to queries about the uploaded document
+### Manual Configuration (if needed)
+If automatic configuration doesn't work, you can manually configure OAuth2 in `application.yaml`:
 
-![Vector DBs](images/cf-vector-dbs.png)
-
-### Binding to MCP Agents
-
-Model Context Protocol (MCP) servers are lightweight programs that expose specific capabilities to AI models through a standardized interface. These servers act as bridges between LLMs and external tools, data sources, or services, allowing your AI application to perform actions like searching databases, accessing files, or calling external APIs without complex custom integrations.
-
-1. Create a user-provided service that provides the URL for an existing MCP server:
-
-```bash
-cf cups mcp-server -p '{"mcpServiceURL":"https://your-mcp-server.example.com"}'
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          cf-sso:
+            client-id: ${CF_SSO_CLIENT_ID}
+            client-secret: ${CF_SSO_CLIENT_SECRET}
+            scope: openid, profile
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          cf-sso:
+            authorization-uri: ${CF_SSO_AUTH_URI}
+            token-uri: ${CF_SSO_TOKEN_URI}
+            user-info-uri: ${CF_SSO_USER_INFO_URI}
+            user-name-attribute: user_name
+            jwk-set-uri: ${CF_SSO_JWK_SET_URI}
 ```
 
-2. Bind the MCP service to your application:
+## 🌐 Application Endpoints
 
-```bash
-cf bind-service ai-tool-chat mcp-server
+### Public Endpoints
+- `/` - Landing page
+- `/login.html` - Login page
+- `/login` - OAuth2 login redirect
+- `/auth/provider` - Get active authentication provider
+- `/auth/status` - Get authentication status
+
+### Protected Endpoints
+- `/welcome` - Post-login welcome page
+- `/chat` - Chat interface (if implemented)
+- `/document/**` - Document processing endpoints
+
+### OAuth2 Endpoints
+- `/oauth2/authorization/sso` - CF-SSO authorization
+- `/oauth2/authorization/github` - GitHub authorization (fallback)
+- `/login/oauth2/code/sso` - CF-SSO callback
+- `/login/oauth2/code/github` - GitHub callback
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### 1. "Invalid Client Registration with Id: cf-sso"
+**Problem**: Login button uses wrong registration ID  
+**Solution**: Update login button to use `/oauth2/authorization/sso` instead of `/oauth2/authorization/cf-sso`
+
+#### 2. "Malformed Jwk set - Missing required 'keys' member"
+**Problem**: CF-SSO JWK Set URI returns invalid data  
+**Solution**: Use java-cfenv auto-configuration instead of manual configuration
+
+#### 3. "Ambiguous mapping" errors
+**Problem**: Multiple controllers handle the same endpoint  
+**Solution**: Remove conflicting mappings or use different endpoint paths
+
+#### 4. Application crashes on startup
+**Problem**: Bean conflicts or missing dependencies  
+**Solution**: Check logs for specific error messages and resolve conflicts
+
+### Debugging
+Enable debug logging:
+```yaml
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    io.pivotal.cfenv: DEBUG
 ```
 
-3. Restart your application:
+## 📚 Key Components
 
-```bash
-cf restart ai-tool-chat
-```
+### Controllers
+- **`LoginController`**: Handles OAuth2 login redirects and provider selection
+- **`WelcomeController`**: Displays post-login welcome page with user info
+- **`AuthController`**: Provides authentication status and provider information
+- **`WebController`**: Serves static pages and handles root redirects
 
-Your chatbot will now register with the MCP agent, and the LLM will be able to invoke the agent's capabilities when responding to chat requests.
+### Security Configuration
+- **`SecurityConfig`**: Configures Spring Security with OAuth2 login
+- **Auto-configuration**: Uses java-cfenv for CF-SSO integration
+- **Dynamic provider selection**: Supports CF-SSO and GitHub OAuth2
 
-![Binding to Agents](images/cf-agents.png)
+### Frontend
+- **`login.html`**: Login page with dynamic provider selection
+- **`welcome.html`**: Thymeleaf template for welcome page
+- **Angular components**: Chat interface and document processing
 
-### Using a Vector Store for Conversation Memory
+## 🤝 Contributing
 
-If you are bound to a vector database and an embedding model, then your chat memory will persist across application restarts and scaling.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -am 'Add new feature'`
+4. Push to branch: `git push origin feature/new-feature`
+5. Create a Pull Request
 
-1. Follow the instructions above in [Binding to Vector Databases](#binding-to-vector-databases)
+## 📄 License
 
-![Binding to Memory](images/cf-memory.png)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Spring Boot and Spring Security teams for excellent OAuth2 support
+- Cloud Foundry team for CF-SSO service
+- java-cfenv project for automatic service binding configuration
+- Spring AI team for AI integration capabilities
+
+## 📞 Support
+
+For issues and questions:
+- Create an issue in the GitHub repository
+- Check the troubleshooting section above
+- Review Cloud Foundry and CF-SSO documentation
+
+---
+
+**Built with ❤️ for the Cloud Foundry and Spring communities**
