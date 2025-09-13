@@ -58,9 +58,16 @@ public class AuthController {
     @GetMapping("/auth/provider")
     public ResponseEntity<Map<String, Object>> authProvider() {
         // Check if we're running in Cloud Foundry environment
-        String provider = "github";
-        if (System.getenv("VCAP_SERVICES") != null) {
+        String provider = "cf-sso"; // Default to CF-SSO for Cloud Foundry deployments
+        
+        // Check for CF-SSO service binding
+        String vcapServices = System.getenv("VCAP_SERVICES");
+        String cfSsoClientId = System.getenv("CF_SSO_CLIENT_ID");
+        
+        if (vcapServices != null && cfSsoClientId != null) {
             provider = "cf-sso";
+        } else if (System.getenv("GITHUB_CLIENT_ID") != null) {
+            provider = "github";
         }
         
         return ResponseEntity.ok(Map.of("provider", provider));

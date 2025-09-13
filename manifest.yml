@@ -1,10 +1,19 @@
 ---
 applications:
-  - name: ai-tool-chat
+  - name: cf-mcp-client-sso
     buildpacks:
       - java_buildpack_offline
     memory: 1G
     path: cf-mcp-client-1.5.3.jar
     instances: 1
+    services:
+      - cf-sso-service
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
+      # CF-SSO Configuration (will be bound via service)
+      CF_SSO_CLIENT_ID: ${vcap.services.cf-sso-service.credentials.client_id}
+      CF_SSO_CLIENT_SECRET: ${vcap.services.cf-sso-service.credentials.client_secret}
+      CF_SSO_AUTH_URI: ${vcap.services.cf-sso-service.credentials.auth_domain}/oauth/authorize
+      CF_SSO_TOKEN_URI: ${vcap.services.cf-sso-service.credentials.auth_domain}/oauth/token
+      CF_SSO_USER_INFO_URI: ${vcap.services.cf-sso-service.credentials.auth_domain}/userinfo
+      CF_SSO_JWK_SET_URI: ${vcap.services.cf-sso-service.credentials.auth_domain}/.well-known/jwks.json
