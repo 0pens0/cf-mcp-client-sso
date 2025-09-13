@@ -1,44 +1,31 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  application:
+    name: cf-mcp-client
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+  http:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
   session:
-    jdbc:
-      initialize-schema: never
-      table-name: SPRING_SESSION
-    timeout: 1440m
-  sql:
-    init:
-      mode: never
-  security:
-    oauth2:
-      client:
-        registration:
-          cf-sso:
-            client-id: ${CF_SSO_CLIENT_ID:cf-sso-client-id}
-            client-secret: ${CF_SSO_CLIENT_SECRET:cf-sso-client-secret}
-            scope:
-              - openid
-              - profile
-              - email
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-          github:
-            client-id: ${GITHUB_CLIENT_ID:your-github-client-id}
-            client-secret: ${GITHUB_CLIENT_SECRET:your-github-client-secret}
-            scope:
-              - user:email
-              - read:user
-        provider:
-          cf-sso:
-            authorization-uri: ${CF_SSO_AUTH_URI:https://login.system.domain.com/oauth/authorize}
-            token-uri: ${CF_SSO_TOKEN_URI:https://login.system.domain.com/oauth/token}
-            user-info-uri: ${CF_SSO_USER_INFO_URI:https://login.system.domain.com/userinfo}
-            user-name-attribute: sub
-            jwk-set-uri: ${CF_SSO_JWK_SET_URI:https://login.system.domain.com/.well-known/jwks.json}
-          github:
-            authorization-uri: https://github.com/login/oauth/authorize
-            token-uri: https://github.com/login/oauth/access_token
-            user-info-uri: https://api.github.com/user
-            user-name-attribute: login
+    store-type: jdbc
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG

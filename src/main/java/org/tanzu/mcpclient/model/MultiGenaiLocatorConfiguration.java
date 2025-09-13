@@ -63,34 +63,6 @@ public class MultiGenaiLocatorConfiguration {
 }
 
 /*
- * ALTERNATIVE APPROACH: Environment-based configuration
- * If you can set environment variables, this approach works too
- */
-@Configuration
-class EnvironmentBasedGenaiLocatorConfiguration {
-
-    @Bean
-    @ConditionalOnProperty("genai.embedding.config-url")
-    public GenaiLocator embeddingGenaiLocator(
-            RestClient.Builder builder,
-            @Value("${genai.embedding.config-url}") String configUrl,
-            @Value("${genai.embedding.api-key}") String apiKey,
-            @Value("${genai.embedding.api-base}") String apiBase) {
-        return new DefaultGenaiLocator(builder, configUrl, apiKey, apiBase);
-    }
-
-    @Bean
-    @ConditionalOnProperty("genai.chat.config-url")
-    public GenaiLocator chatGenaiLocator(
-            RestClient.Builder builder,
-            @Value("${genai.chat.config-url}") String configUrl,
-            @Value("${genai.chat.api-key}") String apiKey,
-            @Value("${genai.chat.api-base}") String apiBase) {
-        return new DefaultGenaiLocator(builder, configUrl, apiKey, apiBase);
-    }
-}
-
-/*
  * If you want to set these manually via environment variables or application.yml:
  *
  * Environment variables example:

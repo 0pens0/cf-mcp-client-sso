@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - CF MCP Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .welcome-container {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        .user-name {
+            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+        .welcome-message {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        .debug-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .debug-toggle {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="success-icon">✅</div>
+        <h1>Welcome!</h1>
+        <div class="user-name" th:text="${userName}">User</div>
+        <div class="welcome-message">
+            You have successfully logged in to the CF MCP Client using Cloud Foundry SSO.
+            You can now access all the application features.
+        </div>
+        
+        <div class="action-buttons">
+            <a href="/" class="btn btn-primary">Go to Application</a>
+            <a href="/logout" class="btn btn-secondary">Logout</a>
+        </div>
+        
+        <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
+        <div id="debug-info" class="debug-info" style="display: none;">
+            <strong>User Attributes:</strong><br>
+            <div th:each="attr : ${userAttributes}" th:text="${attr.key + ': ' + attr.value}"></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDebug() {
+            const debugInfo = document.getElementById('debug-info');
+            const button = document.querySelector('.debug-toggle');
+            if (debugInfo.style.display === 'none') {
+                debugInfo.style.display = 'block';
+                button.textContent = 'Hide Debug Info';
+            } else {
+                debugInfo.style.display = 'none';
+                button.textContent = 'Show Debug Info';
+            }
+        }
+    </script>
+</body>
+</html>
