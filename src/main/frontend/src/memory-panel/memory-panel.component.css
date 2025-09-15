@@ -55,7 +55,7 @@ mat-sidenav {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
-  color: black;
+  color: black !important;
 }
 
 .metrics-content {
@@ -97,7 +97,7 @@ mat-sidenav-content {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
-  color: black;
+  color: black !important;
 }
 
 .conversation-id-container {

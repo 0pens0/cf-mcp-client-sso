@@ -16,7 +16,7 @@
   flex: 1;
   word-wrap: break-word; /* Handle long agent names */
   overflow-wrap: break-word; /* Modern property for word wrapping */
-  color: black;
+  color: black !important;
 }
 
 .close-button {

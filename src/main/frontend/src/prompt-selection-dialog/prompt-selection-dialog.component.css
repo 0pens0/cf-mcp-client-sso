@@ -19,7 +19,7 @@
   flex: 1;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  color: black;
+  color: black !important;
 }
 
 .close-button {
@@ -159,7 +159,7 @@
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: 500;
-  color: black;
+  color: black !important;
 }
 
 .argument-form {

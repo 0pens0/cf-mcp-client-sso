@@ -55,7 +55,7 @@ mat-sidenav {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
-  color: black;
+  color: black !important;
 }
 
 .status-container {
@@ -113,7 +113,7 @@ mat-sidenav {
   margin-bottom: 16px;
   font-size: 16px;
   font-weight: 500;
-  color: black;
+  color: black !important;
 }
 
 .empty-state {
