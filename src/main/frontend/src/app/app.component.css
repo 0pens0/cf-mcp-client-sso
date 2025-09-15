@@ -18,6 +18,16 @@ mat-toolbar span {
   font-size: 1.2rem;
 }
 
+mat-toolbar button {
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+mat-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
 /* Main content wrapper */
 main {
   padding-top: 64px; /* Same as toolbar height */

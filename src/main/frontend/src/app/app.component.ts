@@ -1,5 +1,8 @@
 import { Component, DestroyRef, Inject, inject, signal, effect } from '@angular/core';
 import { MatToolbar } from '@angular/material/toolbar';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
 import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
 import { DocumentPanelComponent } from '../document-panel/document-panel.component';
@@ -13,7 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [MatToolbar, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent],
+  imports: [MatToolbar, MatButton, MatIcon, MatTooltip, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -100,6 +103,11 @@ export class AppComponent {
     protocol = this.document.location.protocol;
 
     return { protocol, host };
+  }
+
+  logout(): void {
+    // Redirect to the logout endpoint which will handle the logout process
+    this.document.location.href = '/logout';
   }
 }
 

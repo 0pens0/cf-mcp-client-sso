@@ -2,6 +2,9 @@
   <mat-toolbar>
     <span>Tanzu Platform Chat</span>
     <span style="flex:1 1 auto"></span>
+    <button mat-icon-button (click)="logout()" matTooltip="Logout" aria-label="Logout">
+      <mat-icon>logout</mat-icon>
+    </button>
   </mat-toolbar>
 
   <app-chat-panel
