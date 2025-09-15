@@ -54,14 +54,14 @@
 
 .result-count {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.7);
+  color: black;
 }
 
 /* Empty State */
 .empty-state {
   text-align: center;
   padding: 48px 16px;
-  color: rgba(0, 0, 0, 0.6);
+  color: black;
 }
 
 .empty-icon {
@@ -69,7 +69,7 @@
   height: 64px;
   width: 64px;
   margin-bottom: 16px;
-  color: rgba(0, 0, 0, 0.4);
+  color: black;
 }
 
 .empty-state p {
@@ -81,7 +81,7 @@
   display: block;
   margin-top: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.4);
+  color: black;
 }
 
 /* Prompts List */
@@ -127,7 +127,7 @@
 }
 
 .prompt-description {
-  color: rgba(0, 0, 0, 0.7);
+  color: black;
   font-size: 13px;
   line-height: 1.4;
   margin-top: 4px;
@@ -136,7 +136,7 @@
 }
 
 .argument-info {
-  color: rgba(0, 0, 0, 0.5);
+  color: black;
   font-size: 12px;
   font-style: italic;
   margin-left: 4px;
@@ -187,7 +187,7 @@
   padding: 24px;
   background-color: rgba(0, 0, 0, 0.04);
   border-radius: 8px;
-  color: rgba(0, 0, 0, 0.6);
+  color: black;
 }
 
 .no-arguments mat-icon {

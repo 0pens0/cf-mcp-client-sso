@@ -35,7 +35,7 @@
 .no-tools {
   text-align: center;
   padding: 32px 16px;
-  color: rgba(0, 0, 0, 0.6);
+  color: black;
 }
 
 .no-tools-icon {
@@ -43,7 +43,7 @@
   height: 48px;
   width: 48px;
   margin-bottom: 16px;
-  color: rgba(0, 0, 0, 0.4);
+  color: black;
 }
 
 .tools-list {
@@ -71,7 +71,7 @@
 
 .tool-description {
   margin: 0;
-  color: rgba(0, 0, 0, 0.7);
+  color: black;
   line-height: 1.4;
   word-wrap: break-word;
   overflow-wrap: break-word;
