@@ -74,7 +74,7 @@
   white-space: pre-line;
   font-size: 16px;
   line-height: 1.5;
-  color: black;
+  color: var(--mat-sys-on-primary-container);
 }
 
 .chat-message.bot {
@@ -156,7 +156,7 @@ button:active:not(:disabled) {
 /* Status indicators */
 .status-indicator {
   font-size: 12px;
-  color: black;
+  color: var(--mat-sys-on-primary-container);
   margin-left: 8px;
 }
 
@@ -311,7 +311,7 @@ button:active:not(:disabled) {
   padding-right: 12px;
   font-size: 16px;
   line-height: 1.6;
-  color: black;
+  color: var(--mat-sys-on-primary-container);
 }
 
 .main-content markdown {
@@ -321,12 +321,12 @@ button:active:not(:disabled) {
 .main-content markdown h1,
 .main-content markdown h2,
 .main-content markdown h3 {
-  color: black;
+  color: var(--mat-sys-on-primary-container);
   margin: 1.5em 0 0.5em;
 }
 
 .main-content markdown p {
-  color: black;
+  color: var(--mat-sys-on-primary-container);
   margin-bottom: 1em;
 }
 
