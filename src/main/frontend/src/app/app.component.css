@@ -6,6 +6,16 @@ mat-toolbar {
   right: 0;
   z-index: 2;
   height: 64px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+mat-toolbar span {
+  color: #333;
+  font-weight: 500;
+  font-size: 1.2rem;
 }
 
 /* Main content wrapper */

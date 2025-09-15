@@ -25,6 +25,10 @@
   flex-direction: column;
   z-index: 1;
   gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .chatbox-messages {
@@ -79,16 +83,27 @@
 }
 
 .chat-message mat-card {
-  box-shadow: var(--mat-sys-elevation-level1);
-  transition: box-shadow var(--motion-duration) var(--motion-easing);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all var(--motion-duration) var(--motion-easing);
 }
 
 .chat-message:hover mat-card {
-  box-shadow: var(--mat-sys-elevation-level2);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .chatbox-footer {
   margin-bottom: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .chatbox-footer input {

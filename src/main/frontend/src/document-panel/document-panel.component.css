@@ -7,7 +7,10 @@
   top: 120px;
   right: 16px;
   z-index: 1000;
-  background-color: var(--mat-sys-primary-container);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .sidenav-container {
@@ -28,7 +31,10 @@ mat-sidenav {
   pointer-events: auto;
   width: 350px;
   padding: 16px;
-  box-shadow: -3px 0 5px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
 }
 
 /* Keep backdrop clickable */
