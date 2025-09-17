@@ -24,6 +24,14 @@ public class WelcomeController {
                 userName = principal.getName();
             }
             
+            // Clean up userName if it contains duplicates (e.g., "demo-user01 demo-user01")
+            if (userName != null && userName.contains(" ")) {
+                String[] parts = userName.split(" ");
+                if (parts.length == 2 && parts[0].equals(parts[1])) {
+                    userName = parts[0]; // Remove duplicate
+                }
+            }
+            
             model.addAttribute("userName", userName != null ? userName : "User");
             model.addAttribute("userAttributes", principal.getAttributes());
         }

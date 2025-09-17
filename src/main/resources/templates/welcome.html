@@ -114,10 +114,12 @@
             <a href="/logout" class="btn btn-secondary">Logout</a>
         </div>
         
-        <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
+        <div style="margin-top: 3rem;">
+            <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
+        </div>
         <div id="debug-info" class="debug-info" style="display: none;">
             <strong>User Attributes:</strong><br>
-            <div th:each="attr : ${userAttributes}" th:text="${attr.key + ': ' + attr.value}"></div>
+            <div th:each="attr : ${userAttributes}" th:if="${attr.key != 'name' and attr.key != 'preferred_username' and attr.key != 'sub'}" th:text="${attr.key + ': ' + attr.value}"></div>
         </div>
     </div>
 
