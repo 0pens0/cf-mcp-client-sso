@@ -10,18 +10,44 @@ import { McpServersPanelComponent } from '../mcp-servers-panel/mcp-servers-panel
 import { ChatboxComponent } from '../chatbox/chatbox.component';
 import { HttpClient } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
-import { interval } from 'rxjs';
+import { interval, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { trigger, state, style, transition, animate } from '@angular/animations';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [MatToolbar, MatButton, MatIcon, MatTooltip, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent],
+  imports: [CommonModule, MatToolbar, MatButton, MatIcon, MatTooltip, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.css',
+  animations: [
+    trigger('fadeInOut', [
+      state('in', style({ opacity: 1, transform: 'translateY(0)' })),
+      transition('void => *', [
+        style({ opacity: 0, transform: 'translateY(-20px)' }),
+        animate('300ms ease-in')
+      ]),
+      transition('* => void', [
+        animate('300ms ease-out', style({ opacity: 0, transform: 'translateY(-20px)' }))
+      ])
+    ])
+  ]
 })
 export class AppComponent {
   title = 'pulseui';
+
+  // Motivation feature properties
+  showMotivationMessage = false;
+  currentMotivationMessage = '';
+  
+  private readonly motivationMessages = [
+    "🚀 You're doing amazing! Keep pushing forward!",
+    "💪 Every challenge is an opportunity to grow stronger!",
+    "⭐ Believe in yourself - you've got this!",
+    "🎯 Success is the sum of small efforts repeated day in and day out!",
+    "🌟 Your potential is limitless - keep reaching for the stars!"
+  ];
 
   // Use signals for reactive state management
   private readonly _currentDocumentIds = signal<string[]>([]);
@@ -103,6 +129,20 @@ export class AppComponent {
     protocol = this.document.location.protocol;
 
     return { protocol, host };
+  }
+
+  showMotivation(): void {
+    // Select a random motivation message
+    const randomIndex = Math.floor(Math.random() * this.motivationMessages.length);
+    this.currentMotivationMessage = this.motivationMessages[randomIndex];
+    this.showMotivationMessage = true;
+
+    // Hide the message after 3 seconds
+    timer(3000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.showMotivationMessage = false;
+      });
   }
 
   logout(): void {
