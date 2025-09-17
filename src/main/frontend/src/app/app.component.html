@@ -1,19 +1,11 @@
 <main xmlns="http://www.w3.org/1999/html">
   <mat-toolbar>
-    <span style="color: green;">Tanzu Platform Chat</span>
+    <span style="color: black;">Tanzu Platform Chat</span>
     <span style="flex:1 1 auto"></span>
-    <button mat-icon-button (click)="showMotivation()" matTooltip="Get Motivated!" aria-label="Motivation">
-      <mat-icon>emoji_events</mat-icon>
-    </button>
     <button mat-icon-button (click)="logout()" matTooltip="Logout" aria-label="Logout">
       <mat-icon>logout</mat-icon>
     </button>
   </mat-toolbar>
-
-  <!-- Motivation Message Display -->
-  <div *ngIf="showMotivationMessage" class="motivation-message" [@fadeInOut]>
-    {{ currentMotivationMessage }}
-  </div>
 
   <app-chat-panel
     [metrics]="metrics()">
