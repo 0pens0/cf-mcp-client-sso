@@ -8,10 +8,10 @@ applications:
     instances: 1
     services:
       - cf-sso-service
-      #- chatgpt5
-      #- embed
-      #- time-mcp-server
-      #- pgvector
+      - chatgpt5
+      - embed
+      - time-mcp-server
+      - pgvector
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       # CF-SSO Configuration (will be bound via service)
