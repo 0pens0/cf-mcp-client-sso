@@ -29,7 +29,8 @@ public class SecurityConfig {
 					"/actuator/info",
 					"/login**",
 					"/oauth2/**",
-					"/welcome"
+					"/welcome",
+					"/error"
 				).permitAll()
 				.requestMatchers("/api/**", "/chat/**", "/document/**", "/mcp/**", "/memory/**", "/prompt/**", "/vectorstore/**", "/metrics/**").authenticated()
 				.anyRequest().authenticated()
