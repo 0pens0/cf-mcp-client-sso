@@ -6,6 +6,14 @@
 <title>Login · Tanzu Platform Chat</title>
 <link rel="icon" href="favicon.ico">
 <style>
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+  }
+  .float-slow { animation: float 4s ease-in-out infinite; }
+  .pulse-shadow { box-shadow: 0 10px 30px rgba(102, 126, 234, 0.25); }
+  
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -39,6 +47,8 @@
     margin: 0 auto 1.5rem;
     font-size: 2.5rem;
     color: white;
+    animation: float 4s ease-in-out infinite;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.25);
   }
   
   h1 {
@@ -74,6 +84,13 @@
     padding: 1rem 0.75rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     text-align: center;
+    animation: float 4s ease-in-out infinite;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .feature-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
   }
   
   .feature-icon {
@@ -105,20 +122,26 @@
     text-decoration: none;
     font-weight: 500;
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     cursor: pointer;
     margin: 2rem 0 1rem;
+    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.2);
   }
   
   .login-button:hover {
     background: #000000;
-    transform: none;
-    box-shadow: none;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(31, 41, 55, 0.3);
   }
   
   .login-button:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(31, 41, 55, 0.5);
+    box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.3);
+  }
+  
+  .login-button:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 8px rgba(31, 41, 55, 0.2);
   }
   
   
@@ -150,15 +173,15 @@
     </p>
     
     <div class="features-grid">
-      <div class="feature-box">
+      <div class="feature-box" style="animation-delay: 0s;">
         <div class="feature-icon">🤖</div>
         <h3 class="feature-title">AI Chat</h3>
       </div>
-      <div class="feature-box">
+      <div class="feature-box" style="animation-delay: 0.2s;">
         <div class="feature-icon">🖥️</div>
         <h3 class="feature-title">MCP Servers</h3>
       </div>
-      <div class="feature-box">
+      <div class="feature-box" style="animation-delay: 0.4s;">
         <div class="feature-icon">🧠</div>
         <h3 class="feature-title">Memory</h3>
       </div>
