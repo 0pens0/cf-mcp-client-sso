@@ -114,24 +114,37 @@
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: #1f2937;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
+    background: #111827; /* slate-900 */
+    color: #ffffff;
+    padding: 10px 22px;
+    border: 1px solid #374151; /* slate-700 */
+    border-radius: 9999px; /* pill */
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     margin: 2rem 0 1rem;
-    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.2);
+    box-shadow: 0 4px 12px rgba(17, 24, 39, 0.3);
+    white-space: nowrap;
+    min-height: 44px;
+  }
+
+  /* Ensure provider icon is visible on dark button */
+  .login-button #providerIcon {
+    width: 20px;
+    height: 20px;
+    padding: 2px;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+    object-fit: contain;
   }
   
   .login-button:hover {
-    background: #000000;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(31, 41, 55, 0.3);
+    background: #0b1220;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.35);
   }
   
   .login-button:focus {
@@ -188,8 +201,8 @@
     </div>
     
     <div class="action-section">
-      <a id="loginButton" href="/login" class="login-button">
-        <img id="providerIcon" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjZmZmIi8+Cjwvc3ZnPg==" alt="Provider" style="width: 24px; height: 24px;"/>
+      <a id="loginButton" href="/login" class="login-button" aria-label="Sign in">
+        <img id="providerIcon" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjZmZmIi8+Cjwvc3ZnPg==" alt="" aria-hidden="true" style="width: 24px; height: 24px;"/>
         <span id="loginCta">Sign in</span>
       </a>
     </div>
@@ -210,17 +223,21 @@
         const icon = document.getElementById('providerIcon');
         
         if (data && data.provider === 'cf-sso') {
-          icon.src = 'images/cf-logo.png';
-          icon.alt = 'Tanzu SSO';
+          icon.src = '/images/spring.png';
+          icon.alt = '';
+          icon.removeAttribute('title');
           icon.style.width = '24px';
           icon.style.height = '24px';
           document.getElementById('loginCta').textContent = 'Sign in with Tanzu SSO';
+          document.getElementById('loginButton').setAttribute('aria-label', 'Sign in with Tanzu SSO');
         } else {
           icon.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjZmZmIi8+Cjwvc3ZnPg==';
-          icon.alt = 'GitHub';
+          icon.alt = '';
+          icon.removeAttribute('title');
           icon.style.width = '24px';
           icon.style.height = '24px';
           document.getElementById('loginCta').textContent = 'Sign in';
+          document.getElementById('loginButton').setAttribute('aria-label', 'Sign in');
         }
       } catch (e) {
         // default to Tanzu icon on error

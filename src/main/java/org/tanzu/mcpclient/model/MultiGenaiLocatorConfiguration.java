@@ -1,10 +1,9 @@
-package org.tanzu.mcpclient.config;
+package org.tanzu.mcpclient.model;
 
 import io.pivotal.cfenv.boot.genai.DefaultGenaiLocator;
 import io.pivotal.cfenv.boot.genai.GenaiLocator;
 import io.pivotal.cfenv.core.CfEnv;
 import io.pivotal.cfenv.core.CfService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +18,7 @@ import java.util.Map;
  * and creating GenaiLocator beans for each GenAI service found.
  */
 @Configuration
+@ConditionalOnProperty(name = "app.multigenai.enabled", havingValue = "true")
 public class MultiGenaiLocatorConfiguration {
 
     /**
@@ -26,7 +26,6 @@ public class MultiGenaiLocatorConfiguration {
      * This works with your existing MultiGenaiLocatorAggregator
      */
     @Bean
-    @ConditionalOnProperty(name = "VCAP_SERVICES") // Only when running in CF
     public List<GenaiLocator> manualGenaiLocators(RestClient.Builder builder) {
         CfEnv cfEnv = new CfEnv();
 
