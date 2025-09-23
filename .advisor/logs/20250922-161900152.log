@@ -1,0 +1,10 @@
+Resolving the build configuration of /Users/orenpenso/git/cf-mcp-client-1.
+
+Command output: /Users/orenpenso/git/cf-mcp-client-1/.advisor/logs/20250922-161900239.log
+🏃 [ 1 / 3 ] Resolving dependencies with mvnw [00m 00s]🏃 [ 1 / 3 ] Resolving dependencies with mvnw [00m 01s]🏃 [ 1 / 3 ] Resolving dependencies with mvnw [00m 02s]🏃 [ 1 / 3 ] Resolving dependencies with mvnw [00m 03s] ok
+🏃 [ 2 / 3 ] Resolving JDK version [00m 00s]🏃 [ 2 / 3 ] Resolving JDK version [00m 01s]Command output: /Users/orenpenso/git/cf-mcp-client-1/.advisor/logs/20250922-161904750.log
+Command output: /Users/orenpenso/git/cf-mcp-client-1/.advisor/logs/20250922-161905865.log
+🏃 [ 2 / 3 ] Resolving JDK version [00m 02s] ok
+🏃 [ 3 / 3 ] Resolving build tool [00m 00s]🏃 [ 3 / 3 ] Resolving build tool [00m 01s] ok
+
+🚀 The build-configuration has been generated in /Users/orenpenso/git/cf-mcp-client-1/target/.advisor/build-config.json

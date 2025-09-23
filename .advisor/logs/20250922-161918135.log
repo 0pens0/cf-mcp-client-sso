@@ -1,0 +1,9 @@
+🏃 Generating advices [00m 00s]🏃 Generating advices [00m 01s] ok
+
+💡 2 advice(s) found:
+ - spring-governance-starter:
+	* Enforces cipher and TLS security based on the industry standards.
+ - tanzu:
+	* Generates the manifest.yml file to deploy in the Tanzu platform for a given module.
+
+🏁 Advices ready to apply!
