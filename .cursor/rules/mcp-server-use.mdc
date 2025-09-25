@@ -1,0 +1,6 @@
+---
+description: Use MCP servers if you can
+alwaysApply: true
+---
+
+Use the MCP servers for most things, failover to CLI if needed.
