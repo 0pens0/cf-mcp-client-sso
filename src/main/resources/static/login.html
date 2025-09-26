@@ -223,11 +223,8 @@
         const icon = document.getElementById('providerIcon');
         
         if (data && data.provider === 'cf-sso') {
-          icon.src = '/images/spring.png';
-          icon.alt = '';
-          icon.removeAttribute('title');
-          icon.style.width = '24px';
-          icon.style.height = '24px';
+          // Hide the icon for Tanzu SSO
+          icon.style.display = 'none';
           document.getElementById('loginCta').textContent = 'Sign in with Tanzu SSO';
           document.getElementById('loginButton').setAttribute('aria-label', 'Sign in with Tanzu SSO');
         } else {

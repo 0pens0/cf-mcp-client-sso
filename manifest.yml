@@ -7,8 +7,8 @@ applications:
     path: target/cf-mcp-client-1.5.4.jar
     instances: 1
     services:
-      - cf-sso-service
-      #- chatgpt5
+      - cf-mcp-sso
+      - cf-mcp-chat
       #- embed
       #- time-mcp-server
       #- pgvector
