@@ -24,7 +24,10 @@ public class DocumentConfiguration {
 
     public DocumentConfiguration(VectorStore vectorStore, ModelDiscoveryService modelDiscoveryService,
                                  ApplicationEventPublisher eventPublisher) {
-        this.embeddingModel = modelDiscoveryService.getEmbeddingModelName();
+        // Only set embedding model if a dedicated embed service is available
+        // This prevents showing embed as available when only chat services are bound
+        this.embeddingModel = modelDiscoveryService.isDedicatedEmbedServiceAvailable() ? 
+            modelDiscoveryService.getEmbeddingModelName() : "";
         this.vectorDatabase = vectorStore.getName();
         this.eventPublisher = eventPublisher;
     }

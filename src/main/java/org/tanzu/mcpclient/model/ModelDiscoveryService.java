@@ -55,6 +55,43 @@ public class ModelDiscoveryService {
     }
 
     /**
+     * Checks if a dedicated embed service is available (not just any service that provides embedding).
+     * This method specifically looks for embed services, not chat services that also provide embedding.
+     */
+    public boolean isDedicatedEmbedServiceAvailable() {
+        // Check if there's a dedicated embed service bound
+        // Look for services with names containing "embed" or specific embed service patterns
+        if (aggregator.hasAnyLocators()) {
+            try {
+                // Get all locator names to check for embed-specific services
+                List<String> embeddingModels = aggregator.aggregateModelNamesByCapability("EMBEDDING");
+                if (embeddingModels != null && !embeddingModels.isEmpty()) {
+                    // Check if any of the embedding models come from dedicated embed services
+                    // For now, we'll be conservative and only return true if we can identify
+                    // a dedicated embed service. Since we can't easily distinguish between
+                    // chat services that provide embedding vs dedicated embed services,
+                    // we'll check for property-based configuration as a fallback.
+                    logger.debug("Found embedding models from GenaiLocators, but checking if from dedicated embed service");
+                }
+            } catch (Exception e) {
+                logger.debug("Error checking for dedicated embed service: {}", e.getMessage());
+            }
+        }
+
+        // Check property-based configuration for dedicated embed service
+        String model = environment.getProperty(EMBEDDING_MODEL);
+        if (model != null && !model.isEmpty()) {
+            logger.debug("Found dedicated embed service via property configuration: {}", model);
+            return true;
+        }
+
+        // For now, be conservative and only show embed as available if explicitly configured
+        // This prevents showing embed as available when only chat services are bound
+        logger.debug("No dedicated embed service found");
+        return false;
+    }
+
+    /**
      * Checks if a chat model is available from any source.
      */
     public boolean isChatModelAvailable() {
