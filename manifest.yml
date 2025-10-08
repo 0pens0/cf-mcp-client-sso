@@ -4,7 +4,7 @@ applications:
     buildpacks:
       - java_buildpack_offline
     memory: 1G
-    path: target/cf-mcp-client-1.5.4.jar
+    path: target/cf-mcp-client-1.6.0.jar
     instances: 1
     services:
       - sso
