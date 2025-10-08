@@ -1,5 +1,6 @@
 import { Component, DestroyRef, Inject, inject, signal, effect } from '@angular/core';
 import { MatToolbar } from '@angular/material/toolbar';
+import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
@@ -7,7 +8,6 @@ import { MemoryPanelComponent } from '../memory-panel/memory-panel.component';
 import { DocumentPanelComponent } from '../document-panel/document-panel.component';
 import { McpServersPanelComponent } from '../mcp-servers-panel/mcp-servers-panel.component';
 import { ChatboxComponent } from '../chatbox/chatbox.component';
-import { MotivationButtonComponent } from './motivation-button/motivation-button.component';
 import { HttpClient } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
 import { interval } from 'rxjs';
@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, MatToolbar, MatIcon, MatTooltip, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent, MotivationButtonComponent],
+  imports: [CommonModule, MatToolbar, MatButton, MatIcon, MatTooltip, ChatPanelComponent, MemoryPanelComponent, DocumentPanelComponent, McpServersPanelComponent, ChatboxComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
