@@ -3,47 +3,125 @@ description: Project guardrails for changes in this repo
 alwaysApply: true
 ---
 
-## Branch Management
+# Project Development Rules
+
+## 1. Branch Management
 - **ALWAYS** create a new branch for any code changes (e.g., `feature/new-feature`, `bugfix/issue-123`)
 - **NEVER** modify the main branch unless explicitly requested by the user
-- Use descriptive branch names following conventional patterns
+- Use descriptive branch names following conventional patterns:
+  - `feature/description` for new features
+  - `bugfix/issue-number` for bug fixes
+  - `hotfix/critical-issue` for urgent fixes
 - When asked to check for issues, check GitHub issues in the repo unless specifically asked to check code issues
+- Clean up feature branches after merging to main
 
-## Documentation & Release Management
+## 2. Documentation & Release Management
 - **MANDATORY**: Document all code changes in commit messages and/or README updates
 - **MANDATORY**: Create release notes documenting what changed, why, and any breaking changes
-- Update version numbers following semantic versioning (major.minor.patch)
-- Current version: 1.5.4 - increment appropriately (1.5.5 for patches, 1.6.0 for features, 2.0.0 for breaking changes)
+- Update version numbers following semantic versioning (major.minor.patch):
+  - Current version: 1.6.0 - increment appropriately
+  - 1.6.1 for patches, 1.7.0 for features, 2.0.0 for breaking changes
+- Use conventional commit format: `type(scope): description`
+  - Types: feat, fix, docs, style, refactor, test, chore
+  - Examples: `feat(motivation): add AI-powered motivation button`, `fix(auth): resolve SSO login issue`
 
-## Version & Deployment Management
+## 3. Version & Deployment Management
 - **ALWAYS** increment the JAR file version in `pom.xml` when creating new releases
 - **ALWAYS** update the Cloud Foundry manifest (`manifest.yml`) path to reflect the new JAR version
 - Ensure the manifest service bindings match the application requirements (currently: SSO service)
 - Update any environment-specific configurations when deploying to different spaces
+- Document deployment changes in commit messages
 
-## Testing Strategy
+## 4. Testing Strategy
 - **ALWAYS** use Cloud Foundry platform for testing new features/changes
-- Create sandbox environments using new spaces with descriptive names
-- Bind all required services (SSO, PostgreSQL, etc.) to the test space
+- Create sandbox environments using new spaces with descriptive names:
+  - Format: `feature-name-sandbox` or `bugfix-issue-sandbox`
+- Always create a random route for the sandbox or change the route to reflect the branch name
+- Create only the services needed for the application to startup:
+  - SSO service for authentication
+  - GenAI service for AI features
+  - PostgreSQL only when database features are being tested
+- Bind all required services to the test space
 - If no organization is specified, ask the user or create one with a descriptive name
 - Clean up test spaces after validation unless user requests otherwise
 - Test both backend (Spring Boot) and frontend (Angular) components
+- Document test results and share in Slack channel #ai-tool-chat
 
-## Tool Usage Priority
+## 5. Tool Usage Priority
 - **PRIMARY**: Use MCP servers and available tools for all operations
 - **FALLBACK**: Only use CLI when MCP tools are insufficient or unavailable
 - **TRANSPARENCY**: Always indicate when CLI fallback is necessary and explain why
+- Prefer MCP tools for:
+  - Cloud Foundry operations (spaces, services, deployments)
+  - GitHub operations (issues, PRs, commits)
+  - File system operations
+  - Code analysis and searching
 
-## Code Quality Standards
+## 6. Code Quality Standards
 - Follow Spring Boot best practices and conventions
-- Maintain clean, well-documented Java code
+- Maintain clean, well-documented Java code with proper Javadoc
 - Ensure all changes are properly tested before deployment
 - Use meaningful commit messages following conventional commit format
-- Follow project-specific coding style from AGENTS.md (4-space indentation, constructor injection, etc.)
+- Follow project-specific coding style from AGENTS.md:
+  - 4-space indentation
+  - Constructor injection over field injection
+  - Proper exception handling
+  - Use of Spring Boot annotations correctly
+- Write unit tests for new functionality
+- Ensure code compiles without warnings
 
-## Project-Specific Guidelines
-- **Frontend**: Angular workspace in `src/main/frontend` with kebab-case folders, PascalCase components
-- **Backend**: Spring Boot services grouped by feature in `src/main/java/org/tanzu/mcpclient`
-- **Build Process**: Use `./mvnw clean package` for full build, `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` for local dev
-- **Configuration**: Update `application.yaml` and profile-specific overrides in `src/main/resources`
-- **Deployment**: Update `manifest.yml` and helper scripts when env variables or services change
+## 7. Project-Specific Guidelines
+
+### Frontend (Angular)
+- Angular workspace in `src/main/frontend` with kebab-case folders, PascalCase components
+- Use Angular signals for state management
+- Follow Material Design principles
+- Implement proper error handling and loading states
+- Use Angular animations for smooth user experience
+- Ensure responsive design
+
+### Backend (Spring Boot)
+- Spring Boot services grouped by feature in `src/main/java/org/tanzu/mcpclient`
+- Use constructor injection for dependencies
+- Implement proper REST API design patterns
+- Use Spring AI for AI integrations
+- Implement proper error handling with @ControllerAdvice
+- Use Spring Security for authentication and authorization
+
+### Build Process
+- Use `./mvnw clean package` for full build
+- Use `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` for local dev
+- Ensure frontend builds successfully before backend compilation
+- Run tests before deployment
+
+### Configuration
+- Update `application.yaml` and profile-specific overrides in `src/main/resources`
+- Use environment-specific configurations for different deployment targets
+- Document configuration changes
+
+### Deployment
+- Update `manifest.yml` and helper scripts when env variables or services change
+- Ensure proper service bindings for each environment
+- Test deployment in sandbox before production
+
+## 8. Communication & Collaboration
+- **MANDATORY**: Share all changes in the app in Slack channel #ai-tool-chat
+- When testing, share the changes and the app route from the sandbox
+- Document any issues or blockers encountered
+- Provide clear status updates on feature development
+- Include screenshots or demo links when appropriate
+
+## 9. Error Handling & Troubleshooting
+- Always check application logs when issues occur
+- Use proper error messages and logging levels
+- Implement fallback mechanisms for external service failures
+- Document common issues and their solutions
+- Test error scenarios in sandbox environments
+
+## 10. Security & Best Practices
+- Never commit sensitive information (API keys, passwords, etc.)
+- Use environment variables for configuration
+- Implement proper input validation
+- Follow OWASP security guidelines
+- Use HTTPS for all external communications
+- Implement proper session management
