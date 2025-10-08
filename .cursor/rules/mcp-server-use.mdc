@@ -7,6 +7,7 @@ alwaysApply: true
 - **ALWAYS** create a new branch for any code changes (e.g., `feature/new-feature`, `bugfix/issue-123`)
 - **NEVER** modify the main branch unless explicitly requested by the user
 - Use descriptive branch names following conventional patterns
+- When asked to check for issues, check GitHub issues in the repo unless specifically asked to check code issues
 
 ## Documentation & Release Management
 - **MANDATORY**: Document all code changes in commit messages and/or README updates
@@ -18,6 +19,7 @@ alwaysApply: true
 - **ALWAYS** increment the JAR file version in `pom.xml` when creating new releases
 - **ALWAYS** update the Cloud Foundry manifest (`manifest.yml`) path to reflect the new JAR version
 - Ensure the manifest service bindings match the application requirements (currently: SSO service)
+- Update any environment-specific configurations when deploying to different spaces
 
 ## Testing Strategy
 - **ALWAYS** use Cloud Foundry platform for testing new features/changes
@@ -25,6 +27,7 @@ alwaysApply: true
 - Bind all required services (SSO, PostgreSQL, etc.) to the test space
 - If no organization is specified, ask the user or create one with a descriptive name
 - Clean up test spaces after validation unless user requests otherwise
+- Test both backend (Spring Boot) and frontend (Angular) components
 
 ## Tool Usage Priority
 - **PRIMARY**: Use MCP servers and available tools for all operations
@@ -36,3 +39,11 @@ alwaysApply: true
 - Maintain clean, well-documented Java code
 - Ensure all changes are properly tested before deployment
 - Use meaningful commit messages following conventional commit format
+- Follow project-specific coding style from AGENTS.md (4-space indentation, constructor injection, etc.)
+
+## Project-Specific Guidelines
+- **Frontend**: Angular workspace in `src/main/frontend` with kebab-case folders, PascalCase components
+- **Backend**: Spring Boot services grouped by feature in `src/main/java/org/tanzu/mcpclient`
+- **Build Process**: Use `./mvnw clean package` for full build, `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` for local dev
+- **Configuration**: Update `application.yaml` and profile-specific overrides in `src/main/resources`
+- **Deployment**: Update `manifest.yml` and helper scripts when env variables or services change
