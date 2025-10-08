@@ -1,6 +1,38 @@
 ---
-description: Use MCP servers if you can
+description: Project guardrails for changes in this repo
 alwaysApply: true
 ---
 
-Use the MCP servers for most things, failover to CLI if needed.
+## Branch Management
+- **ALWAYS** create a new branch for any code changes (e.g., `feature/new-feature`, `bugfix/issue-123`)
+- **NEVER** modify the main branch unless explicitly requested by the user
+- Use descriptive branch names following conventional patterns
+
+## Documentation & Release Management
+- **MANDATORY**: Document all code changes in commit messages and/or README updates
+- **MANDATORY**: Create release notes documenting what changed, why, and any breaking changes
+- Update version numbers following semantic versioning (major.minor.patch)
+- Current version: 1.5.4 - increment appropriately (1.5.5 for patches, 1.6.0 for features, 2.0.0 for breaking changes)
+
+## Version & Deployment Management
+- **ALWAYS** increment the JAR file version in `pom.xml` when creating new releases
+- **ALWAYS** update the Cloud Foundry manifest (`manifest.yml`) path to reflect the new JAR version
+- Ensure the manifest service bindings match the application requirements (currently: SSO service)
+
+## Testing Strategy
+- **ALWAYS** use Cloud Foundry platform for testing new features/changes
+- Create sandbox environments using new spaces with descriptive names
+- Bind all required services (SSO, PostgreSQL, etc.) to the test space
+- If no organization is specified, ask the user or create one with a descriptive name
+- Clean up test spaces after validation unless user requests otherwise
+
+## Tool Usage Priority
+- **PRIMARY**: Use MCP servers and available tools for all operations
+- **FALLBACK**: Only use CLI when MCP tools are insufficient or unavailable
+- **TRANSPARENCY**: Always indicate when CLI fallback is necessary and explain why
+
+## Code Quality Standards
+- Follow Spring Boot best practices and conventions
+- Maintain clean, well-documented Java code
+- Ensure all changes are properly tested before deployment
+- Use meaningful commit messages following conventional commit format
