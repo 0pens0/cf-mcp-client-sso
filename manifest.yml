@@ -9,6 +9,8 @@ applications:
     services:
       - sso
       - chatgpt5
+      - embed-lite
+      - pgvector
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       # CF-SSO Configuration (will be bound via service)
@@ -18,3 +20,5 @@ applications:
       CF_SSO_TOKEN_URI: ${vcap.services.sso.credentials.auth_domain}/oauth/token
       CF_SSO_USER_INFO_URI: ${vcap.services.sso.credentials.auth_domain}/userinfo
       CF_SSO_JWK_SET_URI: ${vcap.services.sso.credentials.auth_domain}/.well-known/jwks.json
+      # Enable multi-GenAI model configuration
+      APP_MULTIGENAI_ENABLED: "true"
