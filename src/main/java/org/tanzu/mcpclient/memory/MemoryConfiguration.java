@@ -27,18 +27,12 @@ public class MemoryConfiguration {
 
     @Bean
     public BaseChatMemoryAdvisor chatMemoryAdvisor(ChatMemoryRepository chatMemoryRepository, VectorStore vectorStore) {
-        BaseChatMemoryAdvisor memoryAdvisor;
-        if (vectorStore instanceof VectorStoreConfiguration.EmptyVectorStore || !modelDiscoveryService.isEmbeddingModelAvailable()) {
-            ChatMemory chatMemory = MessageWindowChatMemory.builder()
-                    .chatMemoryRepository(chatMemoryRepository)
-                    .maxMessages(20)
-                    .build();
-            memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
-        }
-        else {
-            memoryAdvisor = VectorStoreChatMemoryAdvisor.builder(vectorStore).defaultTopK(10).build();
-        }
-
-        return memoryAdvisor;
+        // Always use MessageChatMemoryAdvisor to avoid embedding model issues
+        // The vector store is used for document search, not for chat memory
+        ChatMemory chatMemory = MessageWindowChatMemory.builder()
+                .chatMemoryRepository(chatMemoryRepository)
+                .maxMessages(20)
+                .build();
+        return MessageChatMemoryAdvisor.builder(chatMemory).build();
     }
 }
