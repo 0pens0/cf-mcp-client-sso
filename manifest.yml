@@ -11,9 +11,6 @@ applications:
       - embed
       - postgres
       - sso
-      - chatgpt5
-      - embed-lite
-      - pgvector
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       APP_MULTIGENAI_ENABLED: "true"
