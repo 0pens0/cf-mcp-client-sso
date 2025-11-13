@@ -1,15 +1,19 @@
 ---
 applications:
-  - name: cf-mcp-client-sso
+  - name: ai-tool-chat
     buildpacks:
       - java_buildpack_offline
     memory: 1G
     path: target/cf-mcp-client-1.5.4.jar
     instances: 1
     services:
+      - gpt5
+      - embed
+      - postgres
       - sso
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
+      APP_MULTIGENAI_ENABLED: "true"
       # CF-SSO Configuration (will be bound via service)
       CF_SSO_CLIENT_ID: ${vcap.services.sso.credentials.client_id}
       CF_SSO_CLIENT_SECRET: ${vcap.services.sso.credentials.client_secret}
