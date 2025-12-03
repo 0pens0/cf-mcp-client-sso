@@ -33,7 +33,10 @@ public class VectorStoreConfiguration {
     @Bean
     @Conditional(DatabaseAvailableCondition.class)
     public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-        int dimensions = PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
+        // Default to nomic-embedding-text dimensions (768)
+        int dimensions = 768;
+        final int NOMIC_EMBEDDING_DIMENSION_SIZE = 768;
+        final int OPENAI_EMBEDDING_DIMENSION_SIZE = PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
 
         if (modelDiscoveryService.isEmbeddingModelAvailable()) {
             try {
@@ -41,9 +44,28 @@ public class VectorStoreConfiguration {
                 dimensions = embeddingModel.dimensions();
                 logger.info("Using embedding model dimensions: {}", dimensions);
             } catch (Exception e) {
-                logger.warn("Could not determine embedding dimensions (this may be expected with GenaiLocator): {}. Using default: {}",
-                        e.getMessage(), PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
-                dimensions = PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
+                // If we can't get dimensions, try to infer from model name
+                String modelName = modelDiscoveryService.getEmbeddingModelName();
+                if (modelName != null && !modelName.isEmpty()) {
+                    String modelNameLower = modelName.toLowerCase();
+                    if (modelNameLower.contains("openai") || modelNameLower.contains("text-embedding")) {
+                        dimensions = OPENAI_EMBEDDING_DIMENSION_SIZE;
+                        logger.info("Detected OpenAI embedding model '{}', using OpenAI dimensions: {}", modelName, dimensions);
+                    } else if (modelNameLower.contains("nomic")) {
+                        dimensions = NOMIC_EMBEDDING_DIMENSION_SIZE;
+                        logger.info("Detected nomic embedding model '{}', using nomic dimensions: {}", modelName, dimensions);
+                    } else {
+                        // Default to nomic dimensions
+                        dimensions = NOMIC_EMBEDDING_DIMENSION_SIZE;
+                        logger.warn("Could not determine embedding dimensions for model '{}' (this may be expected with GenaiLocator): {}. Using nomic default: {}",
+                                modelName, e.getMessage(), dimensions);
+                    }
+                } else {
+                    // No model name available, default to nomic
+                    dimensions = NOMIC_EMBEDDING_DIMENSION_SIZE;
+                    logger.warn("Could not determine embedding dimensions (this may be expected with GenaiLocator): {}. Using nomic default: {}",
+                            e.getMessage(), dimensions);
+                }
 
                 // Log additional context for GenaiLocator case
                 if (modelDiscoveryService.isEmbeddingModelAvailableFromLocators()) {
@@ -51,7 +73,7 @@ public class VectorStoreConfiguration {
                 }
             }
         } else {
-            logger.info("No embedding model configured, using default dimensions: {}", dimensions);
+            logger.info("No embedding model configured, using nomic default dimensions: {}", dimensions);
         }
 
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)
