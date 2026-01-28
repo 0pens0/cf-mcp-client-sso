@@ -9,6 +9,7 @@ import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.util.unit.DataSize;
 import org.tanzu.mcpclient.model.ModelDiscoveryService;
@@ -18,22 +19,21 @@ public class DocumentConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentConfiguration.class);
 
-    private final String embeddingModel;
-    private final String vectorDatabase;
+    private final VectorStore vectorStore;
+    private final ModelDiscoveryService modelDiscoveryService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public DocumentConfiguration(VectorStore vectorStore, ModelDiscoveryService modelDiscoveryService,
+    public DocumentConfiguration(@Lazy VectorStore vectorStore, @Lazy ModelDiscoveryService modelDiscoveryService,
                                  ApplicationEventPublisher eventPublisher) {
-        // Only set embedding model if a dedicated embed service is available
-        // This prevents showing embed as available when only chat services are bound
-        this.embeddingModel = modelDiscoveryService.isDedicatedEmbedServiceAvailable() ? 
-            modelDiscoveryService.getEmbeddingModelName() : "";
-        this.vectorDatabase = vectorStore.getName();
+        this.vectorStore = vectorStore;
+        this.modelDiscoveryService = modelDiscoveryService;
         this.eventPublisher = eventPublisher;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void publishConfigurationEvent() {
+        String embeddingModel = modelDiscoveryService.getEmbeddingModelName();
+        String vectorDatabase = vectorStore.getName();
         logger.debug("Publishing DocumentConfigurationEvent: embeddingModel={}, vectorDatabase={}",
                 embeddingModel, vectorDatabase);
         eventPublisher.publishEvent(new DocumentConfigurationEvent(this, embeddingModel, vectorDatabase));

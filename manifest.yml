@@ -8,6 +8,9 @@ applications:
     instances: 1
     services:
       - sso
+      - genai-chat
+      - genai-embed
+      - postgres-vector
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       # CF-SSO Configuration (will be bound via service)

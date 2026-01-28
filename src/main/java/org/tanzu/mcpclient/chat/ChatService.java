@@ -4,24 +4,25 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.tanzu.mcpclient.document.DocumentService;
 import org.tanzu.mcpclient.model.ModelDiscoveryService;
 import org.tanzu.mcpclient.mcp.McpClientFactory;
+import org.tanzu.mcpclient.memory.MemoryConfiguration;
+import org.tanzu.mcpclient.memory.MemoryPreferenceService;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
@@ -33,28 +34,46 @@ public class ChatService {
     private final VectorStore vectorStore;
     private final List<String> mcpServiceURLs;
     private final McpClientFactory mcpClientFactory;
-    private final ModelDiscoveryService modelDiscoveryService; // Add this field
+    private final ModelDiscoveryService modelDiscoveryService;
+    private final MessageChatMemoryAdvisor transientMemoryAdvisor;
+    private final VectorStoreChatMemoryAdvisor persistentMemoryAdvisor;
+    private final MemoryPreferenceService memoryPreferenceService;
+    private final MemoryConfiguration memoryConfiguration;
 
     @Value("classpath:/prompts/system-prompt.st")
     private Resource systemChatPrompt;
 
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
 
-    // Update constructor to inject ModelDiscoveryService
-    public ChatService(ChatClient.Builder chatClientBuilder, BaseChatMemoryAdvisor memoryAdvisor,
-                       List<String> mcpServiceURLs, VectorStore vectorStore, McpClientFactory mcpClientFactory,
+    /**
+     * Updated constructor to support dynamic memory advisor selection.
+     * No longer sets a default memory advisor - instead selects per request based on user preference.
+     */
+    public ChatService(ChatClient.Builder chatClientBuilder,
+                       MessageChatMemoryAdvisor transientMemoryAdvisor,
+                       VectorStoreChatMemoryAdvisor persistentMemoryAdvisor,
+                       MemoryPreferenceService memoryPreferenceService,
+                       MemoryConfiguration memoryConfiguration,
+                       List<String> mcpServiceURLs,
+                       VectorStore vectorStore,
+                       McpClientFactory mcpClientFactory,
                        ModelDiscoveryService modelDiscoveryService) {
-        chatClientBuilder = chatClientBuilder.defaultAdvisors(memoryAdvisor, new SimpleLoggerAdvisor());
+        // Only add SimpleLoggerAdvisor as default - memory advisor will be added per request
+        chatClientBuilder = chatClientBuilder.defaultAdvisors(new SimpleLoggerAdvisor());
         this.chatClient = chatClientBuilder.build();
 
+        this.transientMemoryAdvisor = transientMemoryAdvisor;
+        this.persistentMemoryAdvisor = persistentMemoryAdvisor;
+        this.memoryPreferenceService = memoryPreferenceService;
+        this.memoryConfiguration = memoryConfiguration;
         this.mcpServiceURLs = mcpServiceURLs;
         this.vectorStore = vectorStore;
         this.mcpClientFactory = mcpClientFactory;
-        this.modelDiscoveryService = modelDiscoveryService; // Store the service
+        this.modelDiscoveryService = modelDiscoveryService;
     }
 
     /**
-     * Updated method to handle multiple document IDs
+     * Updated method to handle multiple document IDs with graceful degradation.
      */
     public Flux<String> chatStream(String chat, String conversationId, List<String> documentIds) {
         // Validate chat model availability - this is where graceful degradation happens
@@ -74,6 +93,32 @@ public class ChatService {
         }
     }
 
+    /**
+     * Selects the appropriate memory advisor based on user preference and availability.
+     */
+    private BaseChatMemoryAdvisor selectMemoryAdvisor(String conversationId) {
+        MemoryPreferenceService.MemoryType preference = memoryPreferenceService.getPreference(conversationId);
+        
+        // Check if persistent memory is available
+        boolean persistentAvailable = memoryConfiguration.isPersistentMemoryAvailable(vectorStore);
+        
+        // If user prefers persistent and it's available, use it
+        if (preference == MemoryPreferenceService.MemoryType.PERSISTENT && persistentAvailable) {
+            logger.debug("Using PERSISTENT memory advisor for conversation: {}", conversationId);
+            return persistentMemoryAdvisor;
+        }
+        
+        // Otherwise, use transient (default or fallback)
+        if (preference == MemoryPreferenceService.MemoryType.PERSISTENT && !persistentAvailable) {
+            logger.warn("PERSISTENT memory requested but not available, falling back to TRANSIENT for conversation: {}", 
+                    conversationId);
+        } else {
+            logger.debug("Using TRANSIENT memory advisor for conversation: {}", conversationId);
+        }
+        
+        return transientMemoryAdvisor;
+    }
+
     private Stream<McpSyncClient> createAndInitializeMcpClients() {
         return mcpServiceURLs.stream()
                 .map(mcpClientFactory::createMcpSyncClient)
@@ -83,67 +128,47 @@ public class ChatService {
     private Flux<String> buildAndExecuteStreamChatRequest(String chat, String conversationId, List<String> documentIds,
                                                           ToolCallbackProvider[] toolCallbackProviders) {
 
-        ChatClient.ChatClientRequestSpec spec = chatClient.
-                prompt().
-                user(chat).
-                system(systemChatPrompt).
-                toolCallbacks(toolCallbackProviders);
+        ChatClient.ChatClientRequestSpec spec = chatClient
+                .prompt()
+                .user(chat)
+                .system(systemChatPrompt);
 
+        // Select and add the appropriate memory advisor based on user preference
+        BaseChatMemoryAdvisor selectedMemoryAdvisor = selectMemoryAdvisor(conversationId);
+        spec = spec.advisors(selectedMemoryAdvisor);
+
+        // Add conversation context
+        spec = spec.advisors(advisorSpec -> advisorSpec.param(CONVERSATION_ID, conversationId));
+
+        // Add document context if documents are provided
         if (documentIds != null && !documentIds.isEmpty()) {
-            spec = addDocumentSearchCapabilities(spec, documentIds);
+            logger.debug("Adding document context for documents: {}", documentIds);
+
+            // Use QuestionAnswerAdvisor builder (Spring AI 1.1.0-RC1 API)
+            spec = spec.advisors(QuestionAnswerAdvisor.builder(vectorStore).build());
         }
 
-        spec = spec.advisors(a -> a.param(CONVERSATION_ID, conversationId));
+        // Add MCP tools if available
+        if (toolCallbackProviders.length > 0) {
+            logger.debug("Adding {} MCP tool callback providers", toolCallbackProviders.length);
+            spec = spec.toolCallbacks(toolCallbackProviders);
+        }
 
         return spec.stream().content()
                 .filter(Objects::nonNull);
     }
 
     /**
-     * Updated method to handle multiple document IDs with OR filter expressions
+     * Adds document search capabilities using QuestionAnswerAdvisor.
+     * The advisor will automatically search the vector store for relevant document chunks.
      */
     private ChatClient.ChatClientRequestSpec addDocumentSearchCapabilities(
             ChatClient.ChatClientRequestSpec spec,
             List<String> documentIds) {
 
-        Advisor questionAnswerAdvisor = new QuestionAnswerAdvisor(this.vectorStore);
+        logger.debug("Adding document context for documents: {}", documentIds);
 
-        // Build OR filter expression for multiple documents
-        String filterExpression = buildDocumentFilterExpression(documentIds);
-
-        logger.debug("Using document filter expression: {}", filterExpression);
-
-        return spec.advisors(questionAnswerAdvisor)
-                .advisors(advisorSpec ->
-                        advisorSpec.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filterExpression));
-    }
-
-    /**
-     * Builds a filter expression for multiple document IDs using OR logic
-     * Format: "documentId == 'doc1' OR documentId == 'doc2' OR documentId == 'doc3'"
-     */
-    private String buildDocumentFilterExpression(List<String> documentIds) {
-        if (documentIds == null || documentIds.isEmpty()) {
-            return "";
-        }
-
-        // Filter out null or empty document IDs
-        List<String> validDocumentIds = documentIds.stream()
-                .filter(id -> id != null && !id.trim().isEmpty())
-                .toList();
-
-        if (validDocumentIds.isEmpty()) {
-            return "";
-        }
-
-        // For single document, use simple equality
-        if (validDocumentIds.size() == 1) {
-            return DocumentService.DOCUMENT_ID + " == '" + validDocumentIds.get(0) + "'";
-        }
-
-        // For multiple documents, use OR expressions
-        return validDocumentIds.stream()
-                .map(docId -> DocumentService.DOCUMENT_ID + " == '" + docId + "'")
-                .collect(Collectors.joining(" OR "));
+        // Use QuestionAnswerAdvisor builder (Spring AI 1.1.0-RC1 API)
+        return spec.advisors(QuestionAnswerAdvisor.builder(vectorStore).build());
     }
 }
