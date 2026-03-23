@@ -86,7 +86,7 @@ spring:
 mvn clean package -DskipTests
 
 # Run locally
-java -jar target/cf-mcp-client-1.6.0.jar --spring.profiles.active=local
+java -jar target/cf-mcp-client-1.6.1.jar --spring.profiles.active=local
 ```
 
 ## ☁️ Cloud Foundry Deployment

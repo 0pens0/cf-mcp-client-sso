@@ -1,4 +1,10 @@
 spring:
+  autoconfigure:
+    # With multiple GenAI bindings, CfGenaiProcessor overwrites genai.locator.* per service;
+    # the single GenaiLocatorAutoConfiguration bean then mixes API key and URL from different
+    # instances (401 from genai-proxy). MultiGenaiLocatorConfiguration supplies one locator per service.
+    exclude:
+      - io.pivotal.cfenv.boot.genai.GenaiLocatorAutoConfiguration
   datasource:
     url: jdbc:postgresql://localhost:5432/mydb
     username: myuser

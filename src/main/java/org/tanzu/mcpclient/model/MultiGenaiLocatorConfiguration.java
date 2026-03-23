@@ -4,12 +4,15 @@ import io.pivotal.cfenv.boot.genai.DefaultGenaiLocator;
 import io.pivotal.cfenv.boot.genai.GenaiLocator;
 import io.pivotal.cfenv.core.CfEnv;
 import io.pivotal.cfenv.core.CfService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -18,8 +21,9 @@ import java.util.Map;
  * and creating GenaiLocator beans for each GenAI service found.
  */
 @Configuration
-@ConditionalOnProperty(name = "app.multigenai.enabled", havingValue = "true")
 public class MultiGenaiLocatorConfiguration {
+
+    private static final Logger logger = LoggerFactory.getLogger(MultiGenaiLocatorConfiguration.class);
 
     /**
      * Creates multiple GenaiLocator beans by directly parsing VCAP_SERVICES
@@ -31,8 +35,24 @@ public class MultiGenaiLocatorConfiguration {
 
         return cfEnv.findAllServices().stream()
                 .filter(this::isGenaiService)
+                .sorted(Comparator.comparing(this::genaiServiceSortKey))
                 .map(service -> createGenaiLocator(service, builder))
                 .toList();
+    }
+
+    /**
+     * Prefer chat-capable instances before embedding-only so {@link org.tanzu.mcpclient.model.MultiGenaiLocatorAggregator#getFirstAvailableChatModel()}
+     * tries the correct binding first.
+     */
+    private String genaiServiceSortKey(CfService service) {
+        String name = service.getName() != null ? service.getName().toLowerCase(Locale.ROOT) : "";
+        if (name.contains("chat")) {
+            return "0-" + name;
+        }
+        if (name.contains("embed")) {
+            return "2-" + name;
+        }
+        return "1-" + name;
     }
 
     /**
@@ -41,8 +61,22 @@ public class MultiGenaiLocatorConfiguration {
     private boolean isGenaiService(CfService service) {
         boolean hasGenaiTag = service.existsByTagIgnoreCase("genai") ||
                 service.existsByLabelStartsWith("genai");
-        boolean hasEndpoint = service.getCredentials().getMap().containsKey("endpoint");
-        return hasGenaiTag && hasEndpoint;
+        if (!hasGenaiTag) {
+            return false;
+        }
+        Map<String, Object> credentials = service.getCredentials().getMap();
+        if (credentials == null) {
+            return false;
+        }
+        return hasResolvableGenaiCredentials(credentials);
+    }
+
+    private boolean hasResolvableGenaiCredentials(Map<String, Object> credentials) {
+        Object endpoint = credentials.get("endpoint");
+        if (endpoint instanceof Map<?, ?> endpointMap) {
+            return endpointMap.containsKey("api_key") && endpointMap.containsKey("api_base");
+        }
+        return credentials.containsKey("api_key") && credentials.containsKey("api_base");
     }
 
     /**
@@ -50,14 +84,33 @@ public class MultiGenaiLocatorConfiguration {
      */
     private GenaiLocator createGenaiLocator(CfService service, RestClient.Builder builder) {
         Map<String, Object> credentials = service.getCredentials().getMap();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> endpoint = (Map<String, Object>) credentials.get("endpoint");
+        String configUrl;
+        String apiKey;
+        String apiBase;
 
-        String configUrl = (String) endpoint.get("config_url");
-        String apiKey = (String) endpoint.get("api_key");
-        String apiBase = (String) endpoint.get("api_base");
+        Object endpointObj = credentials.get("endpoint");
+        if (endpointObj instanceof Map<?, ?> endpointMap) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> endpoint = (Map<String, Object>) endpointMap;
+            configUrl = stringVal(endpoint.get("config_url"));
+            apiKey = stringVal(endpoint.get("api_key"));
+            apiBase = stringVal(endpoint.get("api_base"));
+        } else {
+            configUrl = stringVal(credentials.get("config_url"));
+            apiKey = stringVal(credentials.get("api_key"));
+            apiBase = stringVal(credentials.get("api_base"));
+        }
+
+        if (apiKey == null || apiKey.isEmpty() || apiBase == null || apiBase.isEmpty()) {
+            logger.warn("GenAI service '{}' missing api_key or api_base after parsing; locator may be non-functional",
+                    service.getName());
+        }
 
         return new DefaultGenaiLocator(builder, configUrl, apiKey, apiBase);
+    }
+
+    private static String stringVal(Object o) {
+        return o == null ? null : o.toString();
     }
 }
 
