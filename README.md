@@ -53,7 +53,7 @@ GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;
 ```
 
 ### 3. Environment Configuration
-Create `application-local.yaml`:
+Create `src/main/resources/application-local.yaml` (see also `application-local.yaml.example` in the same folder):
 ```yaml
 spring:
   datasource:
@@ -61,9 +61,6 @@ spring:
     username: myuser
     password: mypassword
     driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
 
 # Optional: GitHub OAuth2 for local development
 spring:
@@ -89,7 +86,7 @@ spring:
 mvn clean package -DskipTests
 
 # Run locally
-java -jar target/cf-mcp-client-1.5.1.jar --spring.profiles.active=local
+java -jar target/cf-mcp-client-1.6.0.jar --spring.profiles.active=local
 ```
 
 ## ☁️ Cloud Foundry Deployment

@@ -1,9 +1,9 @@
 package org.tanzu.mcpclient.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import org.springframework.stereotype.Component;
 
 import javax.net.ssl.SSLContext;
@@ -50,7 +50,7 @@ public class McpClientFactory {
 
         HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder(serverUrl)
                 .clientBuilder(clientBuilder)
-                .objectMapper(new ObjectMapper())
+                .jsonMapper(McpJsonMapper.getDefault())
                 .build();
 
         return McpClient.sync(transport)

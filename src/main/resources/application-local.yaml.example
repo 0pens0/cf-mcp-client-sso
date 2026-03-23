@@ -1,0 +1,11 @@
+# Copy to application-local.yaml and adjust credentials for local runs:
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+#
+# application-local.yaml is optional if defaults in application.yaml match your DB.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver

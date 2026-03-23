@@ -4,17 +4,9 @@ spring:
     username: myuser
     password: mypassword
     driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
   application:
     name: cf-mcp-client
   servlet:
-    multipart:
-      enabled: true
-      max-file-size: 50MB
-      max-request-size: 50MB
-  http:
     multipart:
       enabled: true
       max-file-size: 50MB
