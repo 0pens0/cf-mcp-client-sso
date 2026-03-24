@@ -26,11 +26,13 @@ public class MultiGenaiLocatorConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(MultiGenaiLocatorConfiguration.class);
 
     /**
-     * Creates multiple GenaiLocator beans by directly parsing VCAP_SERVICES
-     * This works with your existing MultiGenaiLocatorAggregator
+     * Creates multiple GenaiLocator beans by directly parsing VCAP_SERVICES.
+     * Uses a standalone RestClient.Builder (not the Spring-managed auto-configured one)
+     * to avoid the Actuator observation circular dependency on ObservationRegistry.
      */
     @Bean
-    public List<GenaiLocator> manualGenaiLocators(RestClient.Builder builder) {
+    public List<GenaiLocator> manualGenaiLocators() {
+        RestClient.Builder builder = RestClient.builder();
         CfEnv cfEnv = new CfEnv();
 
         return cfEnv.findAllServices().stream()
