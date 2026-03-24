@@ -3,20 +3,31 @@ package org.tanzu.mcpclient.chat;
 import io.modelcontextprotocol.client.McpSyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
-import org.tanzu.mcpclient.metrics.McpServer;
-import org.tanzu.mcpclient.model.ModelDiscoveryService;
 import org.tanzu.mcpclient.mcp.McpClientFactory;
 import org.tanzu.mcpclient.mcp.McpDiscoveryService;
+import org.tanzu.mcpclient.mcp.McpServerService;
+import org.tanzu.mcpclient.mcp.McpToolCallbackCacheService;
+import org.tanzu.mcpclient.mcp.ProtocolType;
+import org.tanzu.mcpclient.memory.MemoryConfiguration;
+import org.tanzu.mcpclient.memory.MemoryPreferenceService;
+import org.tanzu.mcpclient.metrics.McpServer;
+import org.tanzu.mcpclient.model.ModelDiscoveryService;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Configuration
 public class ChatConfiguration {
@@ -31,8 +42,8 @@ public class ChatConfiguration {
     private final ApplicationEventPublisher eventPublisher;
     private final McpClientFactory mcpClientFactory;
 
-    // Map to store server names by URL for use by other services
     private final Map<String, String> serverNamesByUrl = new ConcurrentHashMap<>();
+    private final List<McpServerService> mcpServerServices = new ArrayList<>();
 
     public ChatConfiguration(ModelDiscoveryService modelDiscoveryService, McpDiscoveryService mcpDiscoveryService,
                              ApplicationEventPublisher eventPublisher, McpClientFactory mcpClientFactory) {
@@ -44,23 +55,22 @@ public class ChatConfiguration {
         this.mcpServersWithHealth = new ArrayList<>();
         this.healthyMcpServiceURLs = new ArrayList<>();
 
-        if (!allMcpServiceURLs.isEmpty()) {
-            logger.info("Found MCP Services: {}", allMcpServiceURLs);
-        }
-    }
+        List<McpDiscoveryService.McpServiceConfiguration> serviceConfigs =
+                mcpDiscoveryService.getMcpServicesWithProtocol();
+        this.mcpServerServices.addAll(serviceConfigs.stream()
+                .map(config -> new McpServerService(config.serviceName(), config.serverUrl(),
+                        config.protocol(), config.headers(), mcpClientFactory))
+                .toList());
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void publishConfigurationEvent() {
-        testMcpServerHealth();
-
-        logger.debug("Publishing ChatConfigurationEvent: chatModel={}, mcpServersWithHealth={}",
-                chatModel, mcpServersWithHealth);
-        eventPublisher.publishEvent(new ChatConfigurationEvent(this, chatModel, mcpServersWithHealth));
+        logger.info("ChatConfiguration initialized with {} MCP server services", mcpServerServices.size());
+        mcpServerServices.forEach(service ->
+                logger.debug("Configured MCP service: {} at {} using {}",
+                        service.getName(), service.getServerUrl(), service.getProtocol().displayName()));
     }
 
     @Bean
     public List<String> mcpServiceURLs() {
-        return healthyMcpServiceURLs; // Only return healthy MCP service URLs
+        return healthyMcpServiceURLs;
     }
 
     @Bean
@@ -68,146 +78,128 @@ public class ChatConfiguration {
         return serverNamesByUrl;
     }
 
-    /**
-     * Test the health of all configured MCP servers by attempting to initialize them.
-     * Updated to handle MCP service URLs from both GenaiLocator and CF services.
-     */
-    private void testMcpServerHealth() {
-        mcpServersWithHealth.clear();
-        healthyMcpServiceURLs.clear();
-        serverNamesByUrl.clear();
+    @Bean
+    public McpToolCallbackCacheService mcpToolCallbackCacheService() {
+        logger.info("Creating McpToolCallbackCacheService with {} protocol-aware MCP server services",
+                mcpServerServices.size());
+        return new McpToolCallbackCacheService(mcpServerServices);
+    }
 
-        if (allMcpServiceURLs.isEmpty()) {
-            logger.debug("No MCP services configured for health checking");
-            return;
+    @Bean
+    public ChatService chatService(ChatClient.Builder chatClientBuilder,
+                                   MessageChatMemoryAdvisor transientMemoryAdvisor,
+                                   VectorStoreChatMemoryAdvisor persistentMemoryAdvisor,
+                                   MemoryPreferenceService memoryPreferenceService,
+                                   MemoryConfiguration memoryConfiguration,
+                                   VectorStore vectorStore,
+                                   McpToolCallbackCacheService toolCallbackCacheService,
+                                   ModelDiscoveryService modelDiscoveryService) {
+
+        logger.info("Creating ChatService with dynamic memory advisor selection from {} MCP server(s)",
+                mcpServerServices.size());
+
+        return new ChatService(
+                chatClientBuilder,
+                transientMemoryAdvisor,
+                persistentMemoryAdvisor,
+                memoryPreferenceService,
+                memoryConfiguration,
+                mcpServerServices,
+                vectorStore,
+                toolCallbackCacheService,
+                modelDiscoveryService
+        );
+    }
+
+    @EventListener
+    public void handleApplicationReady(ApplicationReadyEvent event) {
+        logger.info("Application ready, testing MCP server health...");
+        testMcpServerHealth();
+
+        eventPublisher.publishEvent(new ChatConfigurationEvent(this, chatModel, mcpServersWithHealth));
+
+        logger.info("Chat configuration complete. {} healthy MCP servers available.", healthyMcpServiceURLs.size());
+        if (!healthyMcpServiceURLs.isEmpty()) {
+            logger.info("Healthy MCP servers: {}", healthyMcpServiceURLs);
         }
+    }
 
-        // If we have more URLs than service names (e.g., from GenaiLocator),
-        // create synthetic service names
-        List<String> serviceNames = ensureServiceNames(agentServices, allMcpServiceURLs);
+    private void testMcpServerHealth() {
+        testProtocolAwareMcpServerHealth();
+        testLegacyMcpServerHealth();
+    }
 
-        for (int i = 0; i < serviceNames.size() && i < allMcpServiceURLs.size(); i++) {
-            String serviceName = serviceNames.get(i);
-            String serviceUrl = allMcpServiceURLs.get(i);
+    private void testProtocolAwareMcpServerHealth() {
+        logger.debug("Testing MCP server health using protocol-aware services");
 
-            McpServer mcpServer = testMcpServerHealthAndGetTools(serviceName, serviceUrl);
+        for (McpServerService serverService : mcpServerServices) {
+            logger.debug("Testing health of MCP server: {} at {} ({})",
+                    serverService.getName(), serverService.getServerUrl(),
+                    serverService.getProtocol().displayName());
+
+            McpServer mcpServer = serverService.getHealthyMcpServer();
             mcpServersWithHealth.add(mcpServer);
 
-            // Only add healthy servers to the list used by ChatService
+            serverNamesByUrl.put(serverService.getServerUrl(), mcpServer.serverName());
             if (mcpServer.healthy()) {
-                healthyMcpServiceURLs.add(serviceUrl);
+                healthyMcpServiceURLs.add(serverService.getServerUrl());
             }
-        }
-
-        int healthyCount = healthyMcpServiceURLs.size();
-        int totalCount = mcpServersWithHealth.size();
-
-        logger.info("MCP Server health check completed. Healthy: {}, Unhealthy: {}",
-                healthyCount, totalCount - healthyCount);
-
-        if (healthyCount > 0) {
-            logger.info("Healthy MCP servers that will be used for chat: {}", healthyMcpServiceURLs);
-        }
-
-        if (healthyCount < totalCount) {
-            logger.warn("Some MCP servers are unhealthy and will not be used for chat operations");
         }
     }
 
-    /**
-     * Ensures we have service names for all URLs.
-     * When using GenaiLocator, we might have URLs without corresponding CF service names.
-     */
-    private List<String> ensureServiceNames(List<String> cfServiceNames, List<String> allUrls) {
-        List<String> result = new ArrayList<>(cfServiceNames);
+    private void testLegacyMcpServerHealth() {
+        logger.debug("Testing MCP server health using legacy URL-based method");
 
-        // If we have more URLs than service names, generate synthetic names
-        while (result.size() < allUrls.size()) {
-            String url = allUrls.get(result.size());
-            String syntheticName = generateServiceNameFromUrl(url);
-            result.add(syntheticName);
-            logger.debug("Generated synthetic service name '{}' for URL '{}'", syntheticName, url);
-        }
+        List<String> protocolAwareUrls = mcpServerServices.stream()
+                .map(McpServerService::getServerUrl)
+                .toList();
 
-        return result;
-    }
+        List<String> legacyUrls = allMcpServiceURLs.stream()
+                .filter(url -> !protocolAwareUrls.contains(url))
+                .toList();
 
-    /**
-     * Generates a service name from a URL for MCP servers discovered via GenaiLocator.
-     */
-    private String generateServiceNameFromUrl(String url) {
-        try {
-            java.net.URI uri = java.net.URI.create(url);
-            String host = uri.getHost();
-            int port = uri.getPort();
+        for (String mcpServiceUrl : legacyUrls) {
+            logger.debug("Testing health of legacy MCP server at: {}", mcpServiceUrl);
 
-            if (host != null) {
-                if (port != -1 && port != 80 && port != 443) {
-                    return host + "-" + port;
-                } else {
-                    return host;
-                }
-            }
-        } catch (Exception e) {
-            logger.debug("Failed to parse URL '{}' for service name generation: {}", url, e.getMessage());
-        }
+            try (McpSyncClient mcpSyncClient = mcpClientFactory.createSseClient(mcpServiceUrl,
+                    Duration.ofSeconds(30), Duration.ofMinutes(5))) {
 
-        // Fallback: use URL hash
-        return "mcp-server-" + Math.abs(url.hashCode() % 10000);
-    }
+                mcpSyncClient.initialize();
 
-    /**
-     * Test the health of a single MCP server by attempting to initialize it and get its tools.
-     */
-    private McpServer testMcpServerHealthAndGetTools(String serviceName, String serviceUrl) {
-        logger.debug("Testing health of MCP server: {} at {}", serviceName, serviceUrl);
+                String serverName = serverNamesByUrl.getOrDefault(mcpServiceUrl,
+                        agentServices.stream()
+                                .filter(mcpServiceUrl::contains)
+                                .findFirst()
+                                .orElse("Unknown"));
 
-        List<McpServer.Tool> tools = new ArrayList<>();
-        String serverName = serviceName; // Default to service name
+                List<McpServer.Tool> convertedTools = mcpSyncClient.listTools().tools().stream()
+                        .map(tool -> new McpServer.Tool(tool.name(), tool.description()))
+                        .collect(Collectors.toList());
 
-        try {
-            McpSyncClient client = mcpClientFactory.createHealthCheckClient(serviceUrl);
+                McpServer mcpServer = new McpServer(serverName, serverName, true,
+                        convertedTools, new ProtocolType.SSE());
 
-            // Attempt to initialize the client
-            var initResult = client.initialize();
+                mcpServersWithHealth.add(mcpServer);
+                serverNamesByUrl.put(mcpServiceUrl, serverName);
+                healthyMcpServiceURLs.add(mcpServiceUrl);
 
-            // Get server name from initialization result
-            if (initResult != null && initResult.serverInfo() != null && initResult.serverInfo().name() != null) {
-                serverName = initResult.serverInfo().name();
-                logger.debug("Retrieved server name '{}' for MCP server at {}", serverName, serviceUrl);
-            } else {
-                logger.debug("No server name available for MCP server at {}, using service name '{}'", serviceUrl, serviceName);
-            }
+                logger.debug("Legacy MCP server {} is healthy", mcpServiceUrl);
 
-            // Store the server name for use by other services
-            serverNamesByUrl.put(serviceUrl, serverName);
-
-            // If we get here, the server is healthy - now get the tools
-            logger.debug("MCP server {} is healthy, fetching tools...", serviceName);
-
-            try {
-                var listToolsResult = client.listTools();
-                if (listToolsResult != null && listToolsResult.tools() != null) {
-                    tools = listToolsResult.tools().stream()
-                            .map(tool -> new McpServer.Tool(tool.name(), tool.description()))
-                            .toList();
-                    logger.debug("Found {} tools for MCP server {}: {}",
-                            tools.size(), serviceName,
-                            tools.stream().map(McpServer.Tool::name).toList());
-                }
             } catch (Exception e) {
-                logger.warn("Failed to get tools for MCP server {} (server is healthy but tools unavailable): {}",
-                        serviceName, e.getMessage());
+                logger.warn("Legacy MCP server {} is unhealthy: {}", mcpServiceUrl, e.getMessage());
+
+                String serverName = serverNamesByUrl.getOrDefault(mcpServiceUrl, "Unknown");
+                McpServer mcpServer = new McpServer(serverName, serverName, false,
+                        List.of(), new ProtocolType.SSE());
+
+                mcpServersWithHealth.add(mcpServer);
             }
-
-            // Clean up the test client
-            client.closeGracefully();
-
-            return new McpServer(serviceName, serverName, true, tools);
-
-        } catch (Exception e) {
-            logger.warn("MCP server {} at {} is unhealthy: {}", serviceName, serviceUrl, e.getMessage());
-            return new McpServer(serviceName, serverName, false, List.of());
         }
     }
+
+    public List<String> getHealthyMcpServiceURLs() { return List.copyOf(healthyMcpServiceURLs); }
+    public List<McpServerService> getMcpServerServices() { return List.copyOf(mcpServerServices); }
+    public Map<String, String> getServerNamesByUrl() { return Map.copyOf(serverNamesByUrl); }
+    public String getChatModel() { return chatModel; }
+    public List<String> getAgentServices() { return List.copyOf(agentServices); }
 }

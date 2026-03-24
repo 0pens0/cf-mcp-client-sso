@@ -10,27 +10,29 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Service for discovering and managing Model Context Protocol (MCP) service connections.
- * Handles MCP service discovery from both GenaiLocator and Cloud Foundry service bindings.
+ * Service for discovering MCP service connections from Cloud Foundry service bindings.
+ * Supports tag-based discovery (new) and credential-based discovery (legacy),
+ * as well as SSE, Streamable HTTP, and Legacy protocol types.
  */
 @Service
 public class McpDiscoveryService {
     private static final Logger logger = LoggerFactory.getLogger(McpDiscoveryService.class);
 
-    // Constants
     public static final String MCP_SERVICE_URL = "mcpServiceURL";
+    public static final String MCP_SSE_URL = "mcpSseURL";
+    public static final String MCP_STREAMABLE_URL = "mcpStreamableURL";
+    public static final String TAG_MCP_SSE = "mcpSseURL";
+    public static final String TAG_MCP_STREAMABLE = "mcpStreamableURL";
+    public static final String CREDENTIALS_URI_KEY = "uri";
 
     private final CfEnv cfEnv;
-    private final GenaiLocator genaiLocator; // Optional - may be null
+    private final GenaiLocator genaiLocator;
 
-    /**
-     * Constructor with optional GenaiLocator injection.
-     * GenaiLocator is only available when GenaiLocatorAutoConfiguration is active
-     * (i.e., when genai.locator.config-url property is set by CfGenaiProcessor).
-     */
     public McpDiscoveryService(@Nullable GenaiLocator genaiLocator) {
         this.cfEnv = new CfEnv();
         this.genaiLocator = genaiLocator;
@@ -42,10 +44,6 @@ public class McpDiscoveryService {
         }
     }
 
-    /**
-     * Gets MCP server URLs from GenaiLocator if available, otherwise returns empty list.
-     * This is the new approach for MCP service discovery.
-     */
     public List<String> getMcpServiceUrlsFromLocator() {
         if (genaiLocator == null) {
             return List.of();
@@ -60,10 +58,6 @@ public class McpDiscoveryService {
         }
     }
 
-    /**
-     * Gets the names of MCP services from Cloud Foundry service bindings.
-     * This is the legacy approach for MCP service discovery.
-     */
     public List<String> getMcpServiceNames() {
         try {
             return cfEnv.findAllServices().stream()
@@ -76,10 +70,6 @@ public class McpDiscoveryService {
         }
     }
 
-    /**
-     * Gets the URLs of MCP services from Cloud Foundry service bindings.
-     * This is the legacy approach - new approach uses GenaiLocator.
-     */
     public List<String> getMcpServiceUrls() {
         try {
             return cfEnv.findAllServices().stream()
@@ -92,15 +82,10 @@ public class McpDiscoveryService {
         }
     }
 
-    /**
-     * Gets all MCP service URLs from both sources (GenaiLocator and CF services).
-     * This ensures compatibility with both old and new approaches.
-     */
     public List<String> getAllMcpServiceUrls() {
         List<String> locatorUrls = getMcpServiceUrlsFromLocator();
         List<String> cfUrls = getMcpServiceUrls();
 
-        // Combine both sources, preferring GenaiLocator if available
         if (!locatorUrls.isEmpty()) {
             logger.debug("Using MCP service URLs from GenaiLocator: {}", locatorUrls);
             return locatorUrls;
@@ -113,11 +98,146 @@ public class McpDiscoveryService {
         }
     }
 
-    /**
-     * Checks if a Cloud Foundry service has an MCP service URL configured.
-     */
     public boolean hasMcpServiceUrl(CfService service) {
         CfCredentials credentials = service.getCredentials();
         return credentials != null && credentials.getString(MCP_SERVICE_URL) != null;
+    }
+
+    /**
+     * Returns MCP services with protocol type information.
+     * First tries tag-based discovery, then falls back to credential-based discovery.
+     */
+    public List<McpServiceConfiguration> getMcpServicesWithProtocol() {
+        try {
+            return cfEnv.findAllServices().stream()
+                    .map(this::extractMcpServiceConfiguration)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.warn("Error getting MCP services with protocol information: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private McpServiceConfiguration extractMcpServiceConfiguration(CfService service) {
+        McpServiceConfiguration tagBasedConfig = extractFromTags(service);
+        if (tagBasedConfig != null) {
+            return tagBasedConfig;
+        }
+        return extractFromCredentials(service);
+    }
+
+    private McpServiceConfiguration extractFromTags(CfService service) {
+        CfCredentials credentials = service.getCredentials();
+        if (credentials == null) {
+            return null;
+        }
+
+        Map<String, String> headers = extractHeaders(credentials);
+
+        if (service.existsByTagIgnoreCase(TAG_MCP_STREAMABLE)) {
+            String uri = credentials.getString(CREDENTIALS_URI_KEY);
+            if (isValidUrl(uri)) {
+                logger.debug("Found MCP Streamable service '{}' via tag with URI: {}",
+                    service.getName(), uri);
+                return new McpServiceConfiguration(service.getName(), uri, new ProtocolType.StreamableHttp(), headers);
+            }
+        }
+
+        if (service.existsByTagIgnoreCase(TAG_MCP_SSE)) {
+            String uri = credentials.getString(CREDENTIALS_URI_KEY);
+            if (isValidUrl(uri)) {
+                logger.debug("Found MCP SSE service '{}' via tag with URI: {}", service.getName(), uri);
+                return new McpServiceConfiguration(service.getName(), uri, new ProtocolType.SSE(), headers);
+            }
+        }
+
+        return null;
+    }
+
+    private McpServiceConfiguration extractFromCredentials(CfService service) {
+        CfCredentials credentials = service.getCredentials();
+        if (credentials == null) {
+            return null;
+        }
+
+        Map<String, Object> credentialsMap = credentials.getMap();
+        Map<String, String> headers = extractHeaders(credentials);
+
+        if (credentialsMap.containsKey(MCP_STREAMABLE_URL)) {
+            String url = (String) credentialsMap.get(MCP_STREAMABLE_URL);
+            if (isValidUrl(url)) {
+                logger.debug("Found legacy MCP Streamable service '{}' via credentials", service.getName());
+                return new McpServiceConfiguration(service.getName(), url, new ProtocolType.StreamableHttp(), headers);
+            }
+        }
+
+        if (credentialsMap.containsKey(MCP_SSE_URL)) {
+            String url = (String) credentialsMap.get(MCP_SSE_URL);
+            if (isValidUrl(url)) {
+                logger.debug("Found legacy MCP SSE service '{}' via credentials", service.getName());
+                return new McpServiceConfiguration(service.getName(), url, new ProtocolType.SSE(), headers);
+            }
+        }
+
+        if (credentialsMap.containsKey(MCP_SERVICE_URL)) {
+            String url = (String) credentialsMap.get(MCP_SERVICE_URL);
+            if (isValidUrl(url)) {
+                logger.debug("Found legacy MCP service '{}' via credentials with mcpServiceURL", service.getName());
+                return new McpServiceConfiguration(service.getName(), url, new ProtocolType.Legacy(), headers);
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isValidUrl(String url) {
+        return url != null && !url.trim().isEmpty();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> extractHeaders(CfCredentials credentials) {
+        if (credentials == null) {
+            return Map.of();
+        }
+
+        Map<String, Object> credentialsMap = credentials.getMap();
+        if (credentialsMap == null || !credentialsMap.containsKey("headers")) {
+            return Map.of();
+        }
+
+        Object headersObj = credentialsMap.get("headers");
+        if (!(headersObj instanceof Map)) {
+            logger.debug("Headers credential is not a map, ignoring");
+            return Map.of();
+        }
+
+        try {
+            Map<String, Object> headersMap = (Map<String, Object>) headersObj;
+            Map<String, String> result = new java.util.HashMap<>();
+            for (Map.Entry<String, Object> entry : headersMap.entrySet()) {
+                if (entry.getValue() != null) {
+                    result.put(entry.getKey(), entry.getValue().toString());
+                }
+            }
+            if (!result.isEmpty()) {
+                logger.debug("Extracted {} header(s) from credentials", result.size());
+            }
+            return Map.copyOf(result);
+        } catch (Exception e) {
+            logger.warn("Error extracting headers from credentials: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    public record McpServiceConfiguration(
+            String serviceName,
+            String serverUrl,
+            ProtocolType protocol,
+            Map<String, String> headers
+    ) {
+        public McpServiceConfiguration(String serviceName, String serverUrl, ProtocolType protocol) {
+            this(serviceName, serverUrl, protocol, Map.of());
+        }
     }
 }

@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.3</version>
+		<version>3.5.9</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.tanzu</groupId>
 	<artifactId>cf-mcp-client</artifactId>
-	<version>1.6.1</version>
+	<version>1.7.0</version>
 	<name>cf-mcp-client</name>
 	<description>Chat Client that can bind to GenAI LLMs, MCP Servers, external memory</description>
 
@@ -35,6 +35,14 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -128,7 +136,7 @@
 						</goals>
 						<configuration>
 							<!-- See https://nodejs.org/en/download/ for latest node and npm (lts) versions -->
-							<nodeVersion>v22.12.0</nodeVersion>
+							<nodeVersion>v24.9.0</nodeVersion>
 						</configuration>
 					</execution>
 					<execution>
