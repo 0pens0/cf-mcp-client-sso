@@ -1,0 +1,42 @@
+# Deploy cf-mcp-client-k8s to homelab VKS when secrets are configured.
+name: deploy-k8s
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Container image (registry/name:tag)
+        required: true
+        type: string
+      namespace:
+        description: Target namespace
+        required: true
+        default: demo
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+      - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.HOMELAB_KUBECONFIG }}
+        run: |
+          if [ -z "${KUBE_CONFIG_DATA}" ]; then
+            echo "Secret HOMELAB_KUBECONFIG is not set"
+            exit 1
+          fi
+          mkdir -p ~/.kube
+          echo "$KUBE_CONFIG_DATA" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl cluster-info
+      - name: Deploy
+        env:
+          IMAGE: ${{ inputs.image }}
+          NAMESPACE: ${{ inputs.namespace }}
+        run: |
+          chmod +x scripts/deploy-k8s.sh
+          IMAGE="$IMAGE" NAMESPACE="$NAMESPACE" ./scripts/deploy-k8s.sh

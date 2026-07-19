@@ -2,7 +2,11 @@
 
 A Spring Boot application that provides an AI-powered chat client with Model Context Protocol (MCP) server integration, featuring Cloud Foundry Single Sign-On (CF-SSO) authentication.
 
-## 🚀 Features
+> **Kubernetes / VKS:** See [README-k8s.md](README-k8s.md), [deploy/README.md](deploy/README.md), and [RELEASE_NOTES.md](RELEASE_NOTES.md).
+> The K8s-ready fork tree is also published on branch [`fork/cf-mcp-client-k8s`](https://github.com/0pens0/cf-mcp-client-sso/tree/fork/cf-mcp-client-k8s).
+> Create the standalone repo with: `./scripts/publish-k8s-fork.sh` (requires a PAT that can create `0pens0/cf-mcp-client-k8s`).
+
+## Features
 
 - **🔐 CF-SSO Authentication**: Seamless integration with Cloud Foundry Single Sign-On
 - **🤖 AI Chat Interface**: Powered by Spring AI with support for multiple LLM providers

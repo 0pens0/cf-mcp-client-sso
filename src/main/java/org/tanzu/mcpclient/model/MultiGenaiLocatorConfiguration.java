@@ -29,8 +29,14 @@ public class MultiGenaiLocatorConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(MultiGenaiLocatorConfiguration.class);
 
+    /**
+     * Creates GenaiLocator beans from VCAP, Kubernetes bindings, and GENAI_* env vars.
+     * Uses a standalone {@link RestClient.Builder} (not the Spring-managed bean) to avoid
+     * Actuator ObservationRegistry circular dependencies.
+     */
     @Bean
-    public List<GenaiLocator> manualGenaiLocators(RestClient.Builder builder, Environment environment) {
+    public List<GenaiLocator> manualGenaiLocators(Environment environment) {
+        RestClient.Builder builder = RestClient.builder();
         List<GenaiLocator> locators = new ArrayList<>();
 
         locators.addAll(fromVcapServices(builder));

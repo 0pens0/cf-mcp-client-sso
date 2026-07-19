@@ -42,8 +42,20 @@ management:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    # Postgres may come up after the pod; liveness should not depend on DB
+    db:
+      enabled: false
+    defaults:
+      enabled: true
 
 logging:
   level:
     org.tanzu.mcpclient: INFO
     org.tanzu.mcpclient.bindings: INFO
+    org.springframework.security: INFO
