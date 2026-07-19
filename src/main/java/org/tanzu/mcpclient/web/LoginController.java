@@ -1,7 +1,9 @@
 package org.tanzu.mcpclient.web;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -13,8 +15,8 @@ import java.util.Map;
 public class LoginController {
 	private final ClientRegistrationRepository clientRegistrationRepository;
 
-	public LoginController(ClientRegistrationRepository clientRegistrationRepository) {
-		this.clientRegistrationRepository = clientRegistrationRepository;
+	public LoginController(ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository) {
+		this.clientRegistrationRepository = clientRegistrationRepository.getIfAvailable();
 	}
 
 	@GetMapping("/login")
@@ -58,14 +60,10 @@ public class LoginController {
 			return null;
 		}
 		try {
-			return ((org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository) clientRegistrationRepository)
+			return ((InMemoryClientRegistrationRepository) clientRegistrationRepository)
 					.findByRegistrationId(id);
 		} catch (ClassCastException e) {
 			return null;
 		}
 	}
 }
-
-
-
-

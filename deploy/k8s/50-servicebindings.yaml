@@ -1,0 +1,51 @@
+# Example Tanzu / servicebinding.io ServiceBindings.
+# Apply after GenAI and Postgres service instances (or secrets) exist in the namespace.
+# Adjust apiVersion if the cluster uses services.apps.tanzu.vmware.com ResourceClaims instead.
+---
+apiVersion: servicebinding.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: cf-mcp-client-k8s-genai-chat
+  namespace: demo
+spec:
+  service:
+    apiVersion: v1
+    kind: Secret
+    name: genai-chat-binding
+  workload:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cf-mcp-client-k8s
+  name: genai-chat
+---
+apiVersion: servicebinding.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: cf-mcp-client-k8s-genai-embed
+  namespace: demo
+spec:
+  service:
+    apiVersion: v1
+    kind: Secret
+    name: genai-embed-binding
+  workload:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cf-mcp-client-k8s
+  name: genai-embed
+---
+apiVersion: servicebinding.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: cf-mcp-client-k8s-postgres
+  namespace: demo
+spec:
+  service:
+    apiVersion: v1
+    kind: Secret
+    name: postgres-vector-binding
+  workload:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cf-mcp-client-k8s
+  name: postgres-vector

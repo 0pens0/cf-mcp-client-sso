@@ -1,0 +1,49 @@
+# Kubernetes / VKS profile for Tanzu Platform service bindings.
+# Activate with: --spring.profiles.active=k8s
+#
+# Expected bindings under SERVICE_BINDING_ROOT (default /bindings):
+#   - Postgres (pgvector): type contains postgres, or jdbc-url / uri / host+database
+#   - GenAI chat + embedding: type/name contains genai, with config_url + api_key + api_base
+#     OR OpenAI-compatible uri + api-key (+ optional model)
+#
+# Alternative env vars (no binding required):
+#   GENAI_CHAT_CONFIG_URL / GENAI_CHAT_API_KEY / GENAI_CHAT_API_BASE
+#   GENAI_EMBEDDING_CONFIG_URL / GENAI_EMBEDDING_API_KEY / GENAI_EMBEDDING_API_BASE
+#   SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+  session:
+    # Overridden to jdbc automatically when DatabaseAvailableCondition succeeds
+    store-type: none
+
+app:
+  multigenai:
+    enabled: true
+  security:
+    # When true (default on k8s), APIs are reachable without OAuth so chat/upload
+    # can be demoted without CF-SSO. Set false and provide OIDC client env to enforce login.
+    demo-mode: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.tanzu.mcpclient: INFO
+    org.tanzu.mcpclient.bindings: INFO

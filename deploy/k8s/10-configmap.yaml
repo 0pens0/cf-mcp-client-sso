@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cf-mcp-client-k8s-config
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: cf-mcp-client-k8s
+data:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  APP_SECURITY_DEMO_MODE: "true"
+  APP_MULTIGENAI_ENABLED: "true"
+  SERVICE_BINDING_ROOT: "/bindings"
+  SERVER_PORT: "8080"

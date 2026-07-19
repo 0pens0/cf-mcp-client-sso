@@ -1,0 +1,11 @@
+target/
+.git/
+.github/
+.cursor/
+.idea/
+*.iml
+**/node_modules/
+src/main/frontend/node_modules/
+src/main/frontend/dist/
+**/.DS_Store
+deploy/k8s/*-secret*.yaml

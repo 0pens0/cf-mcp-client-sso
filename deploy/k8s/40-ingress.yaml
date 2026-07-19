@@ -1,0 +1,23 @@
+# Generic Ingress — adjust host/class to match the VKS cluster (same as tanzubotk8s).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cf-mcp-client-k8s
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: cf-mcp-client-k8s
+  annotations:
+    # Contour / nginx / traefik — override after discovering tanzubotk8s ingress class
+    kubernetes.io/ingress.class: contour
+spec:
+  rules:
+    - host: cf-mcp-client-k8s.demo.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cf-mcp-client-k8s
+                port:
+                  name: http
