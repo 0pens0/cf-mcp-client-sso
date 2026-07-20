@@ -1,47 +1,35 @@
 # Homelab VKS deployment status
 
-## Done in this agent run
+## Done
 - Feature branch `cursor/cf-mcp-client-k8s-2671` + PR https://github.com/0pens0/cf-mcp-client-sso/pull/7
 - Version **1.6.0** with k8s profile, service-binding GenAI/Postgres wiring, Dockerfile, manifests
-- Fork tree on branch `fork/cf-mcp-client-k8s` (standalone `0pens0/cf-mcp-client-k8s` needs a PAT: `./scripts/publish-k8s-fork.sh`)
-- Local verification: app boots with `SPRING_PROFILES_ACTIVE=k8s`, discovers mock bindings under `SERVICE_BINDING_ROOT`
+- Docker image built locally: `cf-mcp-client-k8s:1.6.0` (also `/opt/cursor/artifacts/cf-mcp-client-k8s-1.6.0.tar`)
+- Agent joined Tailscale as `cursor` (`100.78.140.30`) with SOCKS5 on `127.0.0.1:1055`
+- SSH to `oren-macbook-pro` reaches auth but **Permission denied** (no authorized key)
 
-## Blocked from this cloud VM
-| Need | Why blocked |
-|------|-------------|
-| Create `0pens0/cf-mcp-client-k8s` repo | GitHub app token 403 on `createRepository` / fork |
-| Reach homelab VKS | Lab is on **Tailscale**; this agent is not on the tailnet |
-| kubeconfig | Not present in the cloud environment (expected on Mac) |
-| `docker build` / kind | OverlayFS mount failures in the VM |
-| Slack `#ai-tool-chat` | Slack MCP requires Cursor desktop authentication |
+## Blocked now
+| Need | Status |
+|------|--------|
+| Mac SSH access | Add agent pubkey below to `~/.ssh/authorized_keys` on Mac |
+| Harbor `harbor.kuhn-labs.com` (192.168.82.200) | Not in advertised Tailscale subnet routes (sparks only advertises `10.0.x/24`) |
+| kubeconfig for Tanzu Platform space | Expected on Mac once SSH works |
 
-## Finish on the Mac (homelab)
+### Agent SSH public key (add on Mac)
 
-```bash
-# 1) Publish standalone fork (once)
-cd /path/to/cf-mcp-client-sso
-git checkout cursor/cf-mcp-client-k8s-2671
-gh auth login   # use a PAT with repo create
-./scripts/publish-k8s-fork.sh
-
-# 2) Point at the VKS cluster that hosts tanzubotk8s
-export KUBECONFIG=~/.kube/homelab-vks   # or your context
-./scripts/discover-tanzubotk8s.sh
-
-# 3) Build + push image (Harbor or your registry)
-docker build -t harbor.lab.example/demo/cf-mcp-client-k8s:1.6.0 .
-docker push harbor.lab.example/demo/cf-mcp-client-k8s:1.6.0
-
-# 4) Create GenAI chat, GenAI embed, Postgres binding secrets
-#    (copy names/structure from the live tanzubotk8s bindings)
-#    see deploy/k8s/secrets.example.yaml
-
-# 5) Deploy
-IMAGE=harbor.lab.example/demo/cf-mcp-client-k8s:1.6.0 \
-NAMESPACE=demo \
-  ./scripts/deploy-k8s.sh
-
-# 6) Verify chat + file upload, then post the route to #ai-tool-chat
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGRZm+P+4ykSvOLA8KA5+clsUtQs+riGrnKORhNw6iKS ubuntu@cursor
 ```
 
-Alternatively store a base64 kubeconfig as GitHub Actions secret `HOMELAB_KUBECONFIG` and run workflow **deploy-k8s**.
+```bash
+# on oren-macbook-pro
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGRZm+P+4ykSvOLA8KA5+clsUtQs+riGrnKORhNw6iKS ubuntu@cursor' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Also ensure Harbor subnet is advertised on Tailscale (e.g. include `192.168.82.0/24` on sparks / the node that can reach Harbor), **or** provide Harbor URL that is on `10.0.x/24`.
+
+Once SSH works the agent will:
+1. Pull kubeconfig / discover `tanzubotk8s` namespace + Tanzu Platform space services
+2. `docker login` + push `cf-mcp-client-k8s:1.6.0` to Harbor
+3. Claim/bind GenAI chat, GenAI embed, Postgres and deploy the app
